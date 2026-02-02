@@ -1,8 +1,8 @@
-package com.rashed.mealify.datasource.remote;
+package com.rashed.mealify.datasource.meals.remote;
 
-import com.rashed.mealify.datasource.remote.dto.CategoriesResponse;
-import com.rashed.mealify.datasource.remote.dto.ListResponse;
-import com.rashed.mealify.datasource.remote.dto.MealsResponse;
+import com.rashed.mealify.datasource.meals.remote.dto.CategoriesResponse;
+import com.rashed.mealify.datasource.meals.remote.dto.ListResponse;
+import com.rashed.mealify.datasource.meals.remote.dto.MealsResponse;
 
 import retrofit2.Call;
 import retrofit2.http.GET;
