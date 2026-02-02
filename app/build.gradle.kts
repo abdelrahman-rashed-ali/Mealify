@@ -1,3 +1,4 @@
+import groovyjarjarantlr.build.ANTLR.compiler
 import java.util.Properties
 
 plugins {
@@ -59,4 +60,6 @@ dependencies {
     implementation(libs.glide)
     implementation(libs.room.runtime)
     annotationProcessor(libs.room.compiler)
+    implementation(libs.paper.onboarding)
+
 }
