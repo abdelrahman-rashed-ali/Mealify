@@ -224,4 +224,42 @@ public class FirebaseAuthDataSource {
                     cb.onResult(new Result.Success<>(new AuthUser(uid, email, "", "")));
                 });
     }
+
+    public void loginAnonymously(ResultCallback<AuthUser> cb) {
+        auth.signInAnonymously()
+                .addOnSuccessListener(result -> {
+                    FirebaseUser user = result.getUser();
+                    if (user == null) {
+                        cb.onResult(new Result.Error<>("User is null after anonymous login", null));
+                        return;
+                    }
+
+                    String uid = user.getUid();
+
+                    Map<String, Object> userDoc = new HashMap<>();
+                    userDoc.put("uid", uid);
+                    userDoc.put("firstName", "Guest");
+                    userDoc.put("lastName", "User");
+                    userDoc.put("email", "");
+                    userDoc.put("isAnonymous", true);
+                    userDoc.put("createdAt", System.currentTimeMillis());
+
+                    db.collection("users")
+                            .document(uid)
+                            .set(userDoc, SetOptions.merge())
+                            .addOnSuccessListener(unused ->
+                                    cb.onResult(new Result.Success<>(
+                                            new AuthUser(uid, "", "Guest", "User")
+                                    ))
+                            )
+                            .addOnFailureListener(e -> {
+                                cb.onResult(new Result.Success<>(
+                                        new AuthUser(uid, "", "Guest", "User")
+                                ));
+                            });
+                })
+                .addOnFailureListener(e ->
+                        cb.onResult(new Result.Error<>("Anonymous login failed", e))
+                );
+    }
 }

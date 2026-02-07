@@ -2,4 +2,16 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="input_background">#1AFFFFFF</color>
+    <color name="google_btn_bg">#1AFFFFFF</color>
+    <color name="chef_green_ripple">#1E8D4E</color>
+    <color name="chef_green">#2ECC71</color>
+    <color name="input_pill_bg">#1AFFFFFF</color>
+    <color name="text_white">#FFFFFF</color>
+    <color name="text_hint_green">#802ECC71</color>
+    <color name="error_red">#FF6B6B</color>
+    <color name="nav_bg">#0E1110</color>
+    <color name="chef_green_glow">#662ECC71</color>
+    <color name="nav_item_inactive">#80FFFFFF</color>
+    <color name="nav_item_active">#2ECC71</color>
 </resources>

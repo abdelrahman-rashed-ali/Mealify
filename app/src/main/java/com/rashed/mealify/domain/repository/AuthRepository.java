@@ -13,5 +13,5 @@ public interface AuthRepository {
     void updateName(String firstName, String lastName, ResultCallback<AuthUser> cb);
     void sendEmailVerification(ResultCallback<Void> cb);
     void checkEmailVerified(ResultCallback<Boolean> cb);
-
+    void loginAnonymously(ResultCallback<AuthUser> cb);
 }

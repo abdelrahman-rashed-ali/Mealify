@@ -57,4 +57,9 @@ public class AuthRepositoryImpl implements AuthRepository {
     public void checkEmailVerified(ResultCallback<Boolean> cb) {
         dataSource.checkEmailVerified(cb);
     }
+
+    @Override
+    public void loginAnonymously(ResultCallback<AuthUser> cb) {
+        dataSource.loginAnonymously(cb);
+    }
 }

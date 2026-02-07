@@ -7,6 +7,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -31,6 +32,7 @@ import com.rashed.mealify.datasource.auth.FirebaseAuthDataSource;
 import com.rashed.mealify.datasource.repository.AuthRepositoryImpl;
 import com.rashed.mealify.domain.model.AuthUser;
 import com.rashed.mealify.domain.repository.AuthRepository;
+import com.rashed.mealify.domain.usecases.auth.LoginAnonymouslyUseCase;
 import com.rashed.mealify.domain.usecases.auth.LoginUseCase;
 import com.rashed.mealify.domain.usecases.auth.LoginWithGoogleUseCase;
 
@@ -40,7 +42,9 @@ public class LoginFragment extends Fragment {
     private MaterialButton btnLogin, btnGoogle;
     private ProgressBar progress;
     private TextView tvGoRegister, tvForgotPassword;
+    private Button btnGuest;
 
+    private LoginAnonymouslyUseCase loginAnonymouslyUseCase;
     private LoginUseCase loginUseCase;
     private LoginWithGoogleUseCase loginWithGoogleUseCase;
     private GoogleSignInClient googleClient;
@@ -88,11 +92,13 @@ public class LoginFragment extends Fragment {
         progress = view.findViewById(R.id.progress);
         tvGoRegister = view.findViewById(R.id.tv_go_register);
         tvForgotPassword = view.findViewById(R.id.tv_forgot_password);
+        btnGuest = view.findViewById(R.id.btn_guest);
 
         FirebaseAuthDataSource ds = new FirebaseAuthDataSource();
         AuthRepository repo = new AuthRepositoryImpl(ds);
         loginUseCase = new LoginUseCase(repo);
         loginWithGoogleUseCase = new LoginWithGoogleUseCase(repo);
+        loginAnonymouslyUseCase = new LoginAnonymouslyUseCase(repo);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
@@ -110,6 +116,23 @@ public class LoginFragment extends Fragment {
         tvForgotPassword.setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.action_login_to_reset)
         );
+
+        btnGuest.setOnClickListener(v -> doGuestLogin());
+    }
+
+    private void doGuestLogin() {
+        showLoading(true);
+        loginAnonymouslyUseCase.execute(result -> {
+            showLoading(false);
+            if (result instanceof Result.Success) {
+                AuthUser user = ((Result.Success<AuthUser>) result).data;
+                toast("Welcome Guest");
+
+            } else {
+                String msg = ((Result.Error<?>) result).message;
+                toast(msg != null ? msg : "Guest login failed");
+            }
+        });
     }
 
     private void doLogin() {
@@ -150,6 +173,7 @@ public class LoginFragment extends Fragment {
         progress.setVisibility(show ? View.VISIBLE : View.GONE);
         btnLogin.setEnabled(!show);
         btnGoogle.setEnabled(!show);
+        btnGuest.setEnabled(!show);
     }
 
     private String safeText(TextInputEditText et) {
