@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:padding="8dp"> <com.google.android.material.card.MaterialCardView
+    android:id="@+id/card_root"
+    android:layout_width="70dp"
+    android:layout_height="70dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="4dp"
+    app:strokeWidth="0dp"
+    app:strokeColor="@color/primary_green"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent">
+
+    <ImageView
+        android:id="@+id/img_category"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        tools:src="@tools:sample/avatars" />
+
+    <View
+        android:id="@+id/view_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#60000000" />
+
+</com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/tv_category_name"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="Category"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintTop_toBottomOf="@id/card_root"
+        app:layout_constraintStart_toStartOf="@id/card_root"
+        app:layout_constraintEnd_toEndOf="@id/card_root"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

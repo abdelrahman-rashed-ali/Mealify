@@ -7,6 +7,7 @@ import com.rashed.mealify.datasource.meals.local.dao.MealDao;
 import com.rashed.mealify.datasource.meals.local.dao.PlanDao;
 import com.rashed.mealify.datasource.meals.local.entities.FavoriteEntity;
 import com.rashed.mealify.datasource.meals.local.entities.MealEntity;
+import com.rashed.mealify.datasource.meals.local.entities.PlannedMealDetails;
 import com.rashed.mealify.datasource.meals.local.entities.PlannedMealEntity;
 import java.util.List;
 
@@ -22,38 +23,17 @@ public class MealsLocalDataSource {
         this.planDao = db.planDao();
     }
 
-    // -------- Meals cache --------
-
-    public void upsertMeal(MealEntity meal) {
-        mealDao.upsert(meal);
-    }
-
-    public MealEntity getMealById(String mealId) {
-        return mealDao.getById(mealId);
-    }
-
-    // -------- Favorites --------
-
+    public void upsertMeal(MealEntity meal) { mealDao.upsert(meal); }
+    public MealEntity getMealById(String mealId) { return mealDao.getById(mealId); }
     public void addFavorite(String uid, MealEntity meal) {
-        // 1) cache meal
         mealDao.upsert(meal);
-        // 2) link uid <-> meal
         favoriteDao.add(new FavoriteEntity(uid, meal.idMeal, System.currentTimeMillis()));
     }
+    public void removeFavorite(String uid, String mealId) { favoriteDao.remove(uid, mealId); }
+    public boolean isFavorite(String uid, String mealId) { return favoriteDao.exists(uid, mealId) > 0; }
+    public List<MealEntity> getFavorites(String uid) { return favoriteDao.getFavoritesMeals(uid); }
 
-    public void removeFavorite(String uid, String mealId) {
-        favoriteDao.remove(uid, mealId);
-    }
 
-    public boolean isFavorite(String uid, String mealId) {
-        return favoriteDao.exists(uid, mealId) > 0;
-    }
-
-    public List<MealEntity> getFavorites(String uid) {
-        return favoriteDao.getFavoritesMeals(uid);
-    }
-
-    // -------- Plan --------
     public void addMealToPlan(String uid, String date, String mealType, MealEntity meal) {
         mealDao.upsert(meal);
         planDao.addToPlan(new PlannedMealEntity(uid, date, meal.idMeal, mealType, System.currentTimeMillis()));
@@ -63,15 +43,7 @@ public class MealsLocalDataSource {
         planDao.removeFromPlan(uid, date, mealId);
     }
 
-    public List<MealEntity> getPlanForDay(String uid, String date) {
-        return planDao.getDayPlanMeals(uid, date);
-    }
-
-    public List<MealEntity> getPlanForWeek(String uid, String fromDate, String toDate) {
-        return planDao.getWeekPlanMeals(uid, fromDate, toDate);
-    }
-
-    public void clearPlanDay(String uid, String date) {
-        planDao.clearDay(uid, date);
+    public List<PlannedMealDetails> getPlanForDay(String uid, String date) {
+        return planDao.getDayPlanDetails(uid, date);
     }
 }

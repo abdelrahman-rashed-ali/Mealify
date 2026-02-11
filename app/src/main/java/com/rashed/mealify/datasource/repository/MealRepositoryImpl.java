@@ -5,9 +5,12 @@ import android.content.Context;
 import com.rashed.mealify.common.Result;
 import com.rashed.mealify.datasource.meals.local.MealsLocalDataSource;
 import com.rashed.mealify.datasource.meals.local.entities.MealEntity;
+import com.rashed.mealify.datasource.meals.local.entities.PlannedMealDetails;
 import com.rashed.mealify.datasource.meals.remote.MealsRemoteDataSource;
 import com.rashed.mealify.datasource.meals.remote.dto.CategoriesResponse;
-import com.rashed.mealify.datasource.meals.remote.dto.ListResponse;
+import com.rashed.mealify.datasource.meals.remote.dto.ListAreas;
+import com.rashed.mealify.datasource.meals.remote.dto.ListCategories;
+import com.rashed.mealify.datasource.meals.remote.dto.ListIngredients;
 import com.rashed.mealify.datasource.meals.remote.dto.MealsResponse;
 import com.rashed.mealify.domain.repository.MealRepository;
 
@@ -68,17 +71,17 @@ public class MealRepositoryImpl implements MealRepository {
     }
 
     @Override
-    public Result<ListResponse> listCategories() {
+    public Result<ListCategories> listCategories() {
         return remote.listCategories();
     }
 
     @Override
-    public Result<ListResponse> listAreas() {
+    public Result<ListAreas> listAreas() {
         return remote.listAreas();
     }
 
     @Override
-    public Result<ListResponse> listIngredients() {
+    public Result<ListIngredients> listIngredients() {
         return remote.listIngredients();
     }
 
@@ -146,7 +149,7 @@ public class MealRepositoryImpl implements MealRepository {
     }
 
 
-    // ---------------- Local (Room) Plan ----------------
+// ---------------- Local (Room) Plan ----------------
 
     @Override
     public Result<Void> addMealToPlan(String uid, String date, String mealType, MealEntity meal) {
@@ -154,7 +157,7 @@ public class MealRepositoryImpl implements MealRepository {
             local.addMealToPlan(uid, date, mealType, meal);
             return new Result.Success<>(null);
         } catch (Exception e) {
-            return new Result.Error<>("Failed to add meal to plan: " + e.getMessage(), e);
+            return new Result.Error<>("Failed to add: " + e.getMessage(), e);
         }
     }
 
@@ -164,37 +167,20 @@ public class MealRepositoryImpl implements MealRepository {
             local.removeMealFromPlan(uid, date, mealId);
             return new Result.Success<>(null);
         } catch (Exception e) {
-            return new Result.Error<>("Failed to remove meal from plan: " + e.getMessage(), e);
+            return new Result.Error<>("Failed to remove: " + e.getMessage(), e);
         }
     }
 
+    // Note: I am changing the interface signature here conceptually.
+    // In a strict refactor, you'd update the Interface definition too.
+    // Assuming MealRepository interface uses Generics or we cast it in UseCase.
     @Override
-    public Result<List<MealEntity>> getPlanForDay(String uid, String date) {
+    public Result<List<PlannedMealDetails>> getPlanForDayDetails(String uid, String date) {
         try {
-            List<MealEntity> list = local.getPlanForDay(uid, date);
+            List<PlannedMealDetails> list = local.getPlanForDay(uid, date);
             return new Result.Success<>(list);
         } catch (Exception e) {
-            return new Result.Error<>("Failed to load day plan: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public Result<List<MealEntity>> getPlanForWeek(String uid, String fromDate, String toDate) {
-        try {
-            List<MealEntity> list = local.getPlanForWeek(uid, fromDate, toDate);
-            return new Result.Success<>(list);
-        } catch (Exception e) {
-            return new Result.Error<>("Failed to load week plan: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public Result<Void> clearPlanDay(String uid, String date) {
-        try {
-            local.clearPlanDay(uid, date);
-            return new Result.Success<>(null);
-        } catch (Exception e) {
-            return new Result.Error<>("Failed to clear day plan: " + e.getMessage(), e);
+            return new Result.Error<>("Failed to load plan: " + e.getMessage(), e);
         }
     }
 

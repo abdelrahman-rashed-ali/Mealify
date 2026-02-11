@@ -9,7 +9,6 @@ import com.google.firebase.firestore.SetOptions;
 import com.rashed.mealify.common.Result;
 import com.rashed.mealify.common.ResultCallback;
 import com.rashed.mealify.domain.model.AuthUser;
-
 import java.util.HashMap;
 import java.util.Map;
 

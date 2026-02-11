@@ -7,6 +7,7 @@ import androidx.room.Entity;
         tableName = "favorites",
         primaryKeys = {"uid", "mealId"}
 )
+
 public class FavoriteEntity {
     @NonNull public String uid;
     @NonNull public String mealId;

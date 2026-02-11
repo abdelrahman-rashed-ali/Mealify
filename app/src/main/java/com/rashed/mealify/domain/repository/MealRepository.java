@@ -2,8 +2,11 @@ package com.rashed.mealify.domain.repository;
 
 import com.rashed.mealify.common.Result;
 import com.rashed.mealify.datasource.meals.local.entities.MealEntity;
+import com.rashed.mealify.datasource.meals.local.entities.PlannedMealDetails;
 import com.rashed.mealify.datasource.meals.remote.dto.CategoriesResponse;
-import com.rashed.mealify.datasource.meals.remote.dto.ListResponse;
+import com.rashed.mealify.datasource.meals.remote.dto.ListAreas;
+import com.rashed.mealify.datasource.meals.remote.dto.ListCategories;
+import com.rashed.mealify.datasource.meals.remote.dto.ListIngredients;
 import com.rashed.mealify.datasource.meals.remote.dto.MealsResponse;
 
 import java.util.List;
@@ -16,9 +19,9 @@ public interface MealRepository {
     Result<MealsResponse> getRandomMeal();
 
     Result<CategoriesResponse> getCategories();
-    Result<ListResponse> listCategories();
-    Result<ListResponse> listAreas();
-    Result<ListResponse> listIngredients();
+    Result<ListCategories> listCategories();
+    Result<ListAreas> listAreas();
+    Result<ListIngredients> listIngredients();
 
     Result<MealsResponse> filterByIngredient(String ingredient);
     Result<MealsResponse> filterByCategory(String category);
@@ -31,7 +34,5 @@ public interface MealRepository {
 
     Result<Void> addMealToPlan(String uid, String date, String mealType, MealEntity meal);
     Result<Void> removeMealFromPlan(String uid, String date, String mealId);
-    Result<List<MealEntity>> getPlanForDay(String uid, String date);
-    Result<List<MealEntity>> getPlanForWeek(String uid, String fromDate, String toDate);
-    Result<Void> clearPlanDay(String uid, String date);
+    Result<List<PlannedMealDetails>> getPlanForDayDetails(String uid, String date);
 }

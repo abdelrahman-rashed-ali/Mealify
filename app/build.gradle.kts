@@ -71,4 +71,7 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation ("androidx.navigation:navigation-fragment:2.7.7")
     implementation ("androidx.navigation:navigation-ui:2.7.7")
+    implementation ("com.pierfrancescosoffritti.androidyoutubeplayer:core:13.0.0")
+
+    implementation ("com.google.android.material:material:1.11.0")
 }
