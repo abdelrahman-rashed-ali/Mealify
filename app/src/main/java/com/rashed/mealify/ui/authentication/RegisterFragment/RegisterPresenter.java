@@ -1,15 +1,16 @@
 package com.rashed.mealify.ui.authentication.RegisterFragment;
 
 import android.text.TextUtils;
-
-import com.rashed.mealify.common.Result;
-import com.rashed.mealify.domain.model.AuthUser;
 import com.rashed.mealify.domain.usecases.auth.RegisterUseCase;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class RegisterPresenter implements RegisterContract.Presenter {
 
     private RegisterContract.View view;
     private final RegisterUseCase registerUseCase;
+    private final CompositeDisposable disposables = new CompositeDisposable();
 
     public RegisterPresenter(RegisterUseCase registerUseCase) {
         this.registerUseCase = registerUseCase;
@@ -23,6 +24,7 @@ public class RegisterPresenter implements RegisterContract.Presenter {
     @Override
     public void detach() {
         this.view = null;
+        disposables.clear();
     }
 
     @Override
@@ -30,46 +32,26 @@ public class RegisterPresenter implements RegisterContract.Presenter {
         if (view == null) return;
 
         boolean isValid = true;
-
-        if (TextUtils.isEmpty(firstName)) {
-            view.setFirstNameError("First Name is required");
-            isValid = false;
-        }
-        if (TextUtils.isEmpty(lastName)) {
-            view.setLastNameError("Last Name is required");
-            isValid = false;
-        }
-        if (TextUtils.isEmpty(email)) {
-            view.setEmailError("Email is required");
-            isValid = false;
-        }
-        if (TextUtils.isEmpty(password)) {
-            view.setPasswordError("Password is required");
-            isValid = false;
-        }
-        if (TextUtils.isEmpty(confirmPassword)) {
-            view.setConfirmPasswordError("Please confirm password");
-            isValid = false;
-        }
-        if (!password.equals(confirmPassword)) {
-            view.setConfirmPasswordError("Passwords do not match");
-            isValid = false;
-        }
+        if (TextUtils.isEmpty(firstName)) { view.setFirstNameError("First Name is required"); isValid = false; }
+        if (TextUtils.isEmpty(lastName)) { view.setLastNameError("Last Name is required"); isValid = false; }
+        if (TextUtils.isEmpty(email)) { view.setEmailError("Email is required"); isValid = false; }
+        if (TextUtils.isEmpty(password)) { view.setPasswordError("Password is required"); isValid = false; }
+        if (TextUtils.isEmpty(confirmPassword)) { view.setConfirmPasswordError("Please confirm password"); isValid = false; }
+        if (!password.equals(confirmPassword)) { view.setConfirmPasswordError("Passwords do not match"); isValid = false; }
 
         if (!isValid) return;
 
         view.showLoading();
-        registerUseCase.execute(email, password, firstName, lastName, result -> {
-            if (view == null) return;
-            view.hideLoading();
-
-            if (result instanceof Result.Success) {
-                view.navigateToVerifyEmail();
-            } else {
-                String msg = ((Result.Error<?>) result).message;
-                view.showMessage(msg != null ? msg : "Registration failed");
-            }
-        });
+        disposables.add(registerUseCase.execute(email, password, firstName, lastName)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(user -> {
+                    view.hideLoading();
+                    view.navigateToVerifyEmail();
+                }, throwable -> {
+                    view.hideLoading();
+                    view.showMessage(throwable.getMessage());
+                }));
     }
 
     @Override

@@ -20,6 +20,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
 public class HomePresenter implements HomeContract.Presenter {
 
     private HomeContract.View view;
@@ -29,7 +33,7 @@ public class HomePresenter implements HomeContract.Presenter {
     private final FilterByCategoryUseCase filterMealsUseCase;
     private final GetMealDetailsUseCase getMealDetailsUseCase;
     private final GetCurrentUserUseCase getCurrentUserUseCase;
-
+    private final CompositeDisposable disposables = new CompositeDisposable();
     // Static Cache
     private static Meal cachedHeroMeal;
     private static List<Category> cachedCategories;
@@ -80,14 +84,17 @@ public class HomePresenter implements HomeContract.Presenter {
                 Result<Meal> heroResult = getRandomMealUseCase.execute();
                 Result<List<Category>> catResult = getCategoriesUseCase.execute();
 
-                getCurrentUserUseCase.execute(userResult -> {
-                    if (userResult instanceof Result.Success) {
-                        AuthUser user = ((Result.Success<AuthUser>) userResult).data;
-                        cachedUserName = user.firstName;
-                    } else {
-                        cachedUserName = "Guest";
-                    }
-                });
+                disposables.add(getCurrentUserUseCase.execute()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(
+                                user -> {
+                                    cachedUserName = user.firstName;
+                                },
+                                throwable -> {
+                                    cachedUserName = "Guest";
+                                }
+                        ));
 
                 mainHandler.post(() -> {
                     if (view == null) return;

@@ -1,8 +1,8 @@
 package com.rashed.mealify.domain.usecases.auth;
 
-import com.rashed.mealify.common.ResultCallback;
 import com.rashed.mealify.domain.model.AuthUser;
 import com.rashed.mealify.domain.repository.AuthRepository;
+import io.reactivex.rxjava3.core.Single;
 
 public class LoginAnonymouslyUseCase {
     private final AuthRepository repo;
@@ -11,7 +11,7 @@ public class LoginAnonymouslyUseCase {
         this.repo = repo;
     }
 
-    public void execute(ResultCallback<AuthUser> cb) {
-        repo.loginAnonymously(cb);
+    public Single<AuthUser> execute() {
+        return repo.loginAnonymously();
     }
 }

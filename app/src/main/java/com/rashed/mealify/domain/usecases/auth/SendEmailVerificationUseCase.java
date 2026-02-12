@@ -1,7 +1,7 @@
 package com.rashed.mealify.domain.usecases.auth;
 
-import com.rashed.mealify.common.ResultCallback;
 import com.rashed.mealify.domain.repository.AuthRepository;
+import io.reactivex.rxjava3.core.Completable;
 
 public class SendEmailVerificationUseCase {
     private final AuthRepository repo;
@@ -10,7 +10,7 @@ public class SendEmailVerificationUseCase {
         this.repo = repo;
     }
 
-    public void execute(ResultCallback<Void> cb) {
-        repo.sendEmailVerification(cb);
+    public Completable execute() {
+        return repo.sendEmailVerification();
     }
 }

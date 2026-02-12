@@ -1,9 +1,11 @@
 package com.rashed.mealify.ui.authentication.VerifyFragment;
 
-import com.rashed.mealify.common.Result;
 import com.rashed.mealify.domain.usecases.auth.CheckEmailVerifiedUseCase;
 import com.rashed.mealify.domain.usecases.auth.LogoutUseCase;
 import com.rashed.mealify.domain.usecases.auth.SendEmailVerificationUseCase;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class VerifyPresenter implements VerifyContract.Presenter {
 
@@ -11,6 +13,7 @@ public class VerifyPresenter implements VerifyContract.Presenter {
     private final SendEmailVerificationUseCase sendEmailUseCase;
     private final CheckEmailVerifiedUseCase checkEmailUseCase;
     private final LogoutUseCase logoutUseCase;
+    private final CompositeDisposable disposables = new CompositeDisposable();
 
     public VerifyPresenter(SendEmailVerificationUseCase sendEmailUseCase,
                            CheckEmailVerifiedUseCase checkEmailUseCase,
@@ -28,6 +31,7 @@ public class VerifyPresenter implements VerifyContract.Presenter {
     @Override
     public void detach() {
         this.view = null;
+        disposables.clear();
     }
 
     @Override
@@ -35,23 +39,21 @@ public class VerifyPresenter implements VerifyContract.Presenter {
         if (view == null) return;
         view.showLoading();
 
-        checkEmailUseCase.execute(result -> {
-            if (view == null) return;
-            view.hideLoading();
-
-            if (result instanceof Result.Success) {
-                boolean isVerified = ((Result.Success<Boolean>) result).data;
-                if (isVerified) {
-                    view.showMessage("Email Verified Successfully!");
-                    view.navigateToLogin();
-                } else {
-                    view.showMessage("Not yet verified. Please check your email inbox/spam.");
-                }
-            } else {
-                String msg = ((Result.Error<?>) result).message;
-                view.showMessage("Error checking status: " + (msg != null ? msg : "Unknown"));
-            }
-        });
+        disposables.add(checkEmailUseCase.execute()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(isVerified -> {
+                    view.hideLoading();
+                    if (isVerified) {
+                        view.showMessage("Email Verified Successfully!");
+                        view.navigateToLogin();
+                    } else {
+                        view.showMessage("Not yet verified. Please check your email inbox/spam.");
+                    }
+                }, throwable -> {
+                    view.hideLoading();
+                    view.showMessage("Error checking status: " + throwable.getMessage());
+                }));
     }
 
     @Override
@@ -59,17 +61,16 @@ public class VerifyPresenter implements VerifyContract.Presenter {
         if (view == null) return;
         view.showLoading();
 
-        sendEmailUseCase.execute(result -> {
-            if (view == null) return;
-            view.hideLoading();
-
-            if (result instanceof Result.Success) {
-                view.showMessage("Verification email sent!");
-            } else {
-                String msg = ((Result.Error<?>) result).message;
-                view.showMessage("Failed to send: " + (msg != null ? msg : "Unknown error"));
-            }
-        });
+        disposables.add(sendEmailUseCase.execute()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(() -> {
+                    view.hideLoading();
+                    view.showMessage("Verification email sent!");
+                }, throwable -> {
+                    view.hideLoading();
+                    view.showMessage("Failed to send: " + throwable.getMessage());
+                }));
     }
 
     @Override
