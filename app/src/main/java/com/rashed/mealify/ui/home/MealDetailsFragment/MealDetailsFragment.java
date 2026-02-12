@@ -22,6 +22,7 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions;
@@ -54,12 +55,11 @@ public class MealDetailsFragment extends Fragment {
     private RecyclerView rvIngredients;
     private Button btnPrevStep, btnNextStep;
     private CardView cardVideo;
-
     private FloatingActionButton fabFavorite;
     private ExtendedFloatingActionButton fabPlan;
 
     private boolean isFavorite = false;
-    private final String userId = "current_user_id";
+    private String userId;
     private ToggleFavoriteUseCase toggleFavoriteUseCase;
     private CheckMealStatusUseCase checkMealStatusUseCase;
     private ManagePlanUseCase managePlanUseCase;
@@ -87,6 +87,8 @@ public class MealDetailsFragment extends Fragment {
                 checkInitialState();
             }
         }
+
+
     }
 
     private void initDependencies() {
@@ -95,6 +97,11 @@ public class MealDetailsFragment extends Fragment {
         toggleFavoriteUseCase = new ToggleFavoriteUseCase(repo);
         checkMealStatusUseCase = new CheckMealStatusUseCase(repo);
         managePlanUseCase = new ManagePlanUseCase(repo);
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        } else {
+            userId = "current_user_id";
+        }
     }
 
     private void initViews(View view) {
