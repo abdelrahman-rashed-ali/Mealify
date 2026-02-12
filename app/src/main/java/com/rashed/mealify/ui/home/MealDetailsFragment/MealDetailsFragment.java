@@ -7,11 +7,14 @@ import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
+// Removed Toast import
+// import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
@@ -20,53 +23,46 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.auth.FirebaseAuth;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.snackbar.Snackbar; // Added Snackbar import
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 import com.rashed.mealify.R;
-import com.rashed.mealify.common.Result;
+import com.rashed.mealify.datasource.repository.MealRepositoryImpl;
 import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.usecases.meal.CheckMealStatusUseCase;
 import com.rashed.mealify.domain.usecases.meal.ManagePlanUseCase;
 import com.rashed.mealify.domain.usecases.meal.ToggleFavoriteUseCase;
 import com.rashed.mealify.ui.home.MealDetailsFragment.adapter.IngredientsAdapter;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class MealDetailsFragment extends Fragment {
+public class MealDetailsFragment extends Fragment implements MealDetailsContract.View {
 
-    private Meal currentMeal;
-    private int currentStepIndex = 0;
-    private List<String> instructionSteps = new ArrayList<>();
+    private MealDetailsContract.Presenter presenter;
 
-    private YouTubePlayerView youtubePlayerView;
     private ImageView imgHeader;
     private Toolbar toolbar;
-    private CollapsingToolbarLayout collapsingToolbar;
-    private TextView tvArea, tvCategory, tvStepCounter, tvInstructionText, tvVideoTitle;
+    private TextView tvTitleHeader, tvArea, tvCategory, tvStepCounter, tvInstructionText, tvVideoTitle;
     private RecyclerView rvIngredients;
     private Button btnPrevStep, btnNextStep;
+    private MaterialButton btnFavorite, btnPlan;
     private CardView cardVideo;
-    private FloatingActionButton fabFavorite;
-    private ExtendedFloatingActionButton fabPlan;
+    private YouTubePlayerView youtubePlayerView;
+    private ProgressBar progressBar;
+    private View contentView;
 
-    private boolean isFavorite = false;
-    private String userId;
-    private ToggleFavoriteUseCase toggleFavoriteUseCase;
-    private CheckMealStatusUseCase checkMealStatusUseCase;
-    private ManagePlanUseCase managePlanUseCase;
     private IngredientsAdapter ingredientsAdapter;
-
     private YouTubePlayer mYouTubePlayer;
     private String pendingVideoId;
+
+    private int currentStepIndex = 0;
+    private List<String> instructionSteps = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -76,148 +72,137 @@ public class MealDetailsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        initDependencies();
         initViews(view);
+        initPresenter();
 
         if (getArguments() != null) {
             MealDetailsFragmentArgs args = MealDetailsFragmentArgs.fromBundle(getArguments());
-            currentMeal = args.getMeal();
-            if (currentMeal != null) {
-                bindMealData(currentMeal);
-                checkInitialState();
+            Meal meal = args.getMeal();
+            if (meal != null) {
+                presenter.initMealData(meal);
             }
-        }
-
-
-    }
-
-    private void initDependencies() {
-        com.rashed.mealify.domain.repository.MealRepository repo =
-                new com.rashed.mealify.datasource.repository.MealRepositoryImpl(requireContext());
-        toggleFavoriteUseCase = new ToggleFavoriteUseCase(repo);
-        checkMealStatusUseCase = new CheckMealStatusUseCase(repo);
-        managePlanUseCase = new ManagePlanUseCase(repo);
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        } else {
-            userId = "current_user_id";
         }
     }
 
     private void initViews(View view) {
         imgHeader = view.findViewById(R.id.img_meal_detail);
         toolbar = view.findViewById(R.id.toolbar);
-        collapsingToolbar = view.findViewById(R.id.collapsing_toolbar);
+
+        tvTitleHeader = view.findViewById(R.id.tv_meal_title_header);
         tvArea = view.findViewById(R.id.tv_area);
         tvCategory = view.findViewById(R.id.tv_category);
+
         rvIngredients = view.findViewById(R.id.rv_ingredients);
         tvStepCounter = view.findViewById(R.id.tv_step_counter);
         tvInstructionText = view.findViewById(R.id.tv_instruction_step);
+
         btnPrevStep = view.findViewById(R.id.btn_prev_step);
         btnNextStep = view.findViewById(R.id.btn_next_step);
+
+        btnFavorite = view.findViewById(R.id.btn_action_favorite);
+        btnPlan = view.findViewById(R.id.btn_action_plan);
+
         cardVideo = view.findViewById(R.id.card_video);
         tvVideoTitle = view.findViewById(R.id.tv_video_title);
         youtubePlayerView = view.findViewById(R.id.youtube_player_view);
-        fabFavorite = view.findViewById(R.id.fab_favorite);
-        fabPlan = view.findViewById(R.id.fab_plan);
+
+        progressBar = view.findViewById(R.id.progress_bar);
+        contentView = view.findViewById(R.id.nested_scroll_view);
 
         if (toolbar != null) {
             toolbar.setNavigationOnClickListener(v -> requireActivity().onBackPressed());
         }
 
-        getLifecycle().addObserver(youtubePlayerView);
-        setupYoutubePlayer();
-        setupActions();
-
         rvIngredients.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         ingredientsAdapter = new IngredientsAdapter();
         rvIngredients.setAdapter(ingredientsAdapter);
 
+        btnFavorite.setOnClickListener(v -> presenter.toggleFavorite());
+        btnPlan.setOnClickListener(v -> showPlanDatePicker());
+
         btnNextStep.setOnClickListener(v -> changeStep(1));
         btnPrevStep.setOnClickListener(v -> changeStep(-1));
+
+        getLifecycle().addObserver(youtubePlayerView);
+        setupYoutubePlayer();
     }
 
-    private void checkInitialState() {
-        if (currentMeal == null) return;
-        new Thread(() -> {
-            Result<Boolean> favResult = checkMealStatusUseCase.isFavorite(userId, currentMeal.getId());
-            if (favResult instanceof Result.Success) {
-                isFavorite = ((Result.Success<Boolean>) favResult).data;
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(this::updateFavoriteIcon);
-                }
-            }
-        }).start();
+    private void initPresenter() {
+        MealRepositoryImpl repo = new MealRepositoryImpl(requireContext());
+        presenter = new MealDetailsPresenter(
+                new CheckMealStatusUseCase(repo),
+                new ToggleFavoriteUseCase(repo),
+                new ManagePlanUseCase(repo)
+        );
+        presenter.attach(this);
     }
 
-    private void updateFavoriteIcon() {
-        if (fabFavorite == null) return;
-        fabFavorite.setImageResource(isFavorite ?
-                R.drawable.ic_favorite_filled : R.drawable.ic_favorite_border);
-    }
+    @Override
+    public void displayMealDetails(Meal meal) {
+        tvTitleHeader.setText(meal.getName());
 
-    private void setupActions() {
-        fabFavorite.setOnClickListener(v -> {
-            if (currentMeal == null) return;
-            new Thread(() -> {
-                toggleFavoriteUseCase.execute(userId, currentMeal, isFavorite);
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> {
-                        isFavorite = !isFavorite;
-                        updateFavoriteIcon();
-                        Toast.makeText(getContext(), isFavorite ? "Added to Favorites" : "Removed", Toast.LENGTH_SHORT).show();
-                    });
-                }
-            }).start();
-        });
-
-        fabPlan.setOnClickListener(v -> {
-            if (currentMeal != null) showDatePickerAndAddMeal();
-        });
-    }
-
-    private void showDatePickerAndAddMeal() {
-        com.google.android.material.datepicker.MaterialDatePicker<Long> datePicker =
-                com.google.android.material.datepicker.MaterialDatePicker.Builder.datePicker()
-                        .setTitleText("Select Date for Meal")
-                        .setSelection(com.google.android.material.datepicker.MaterialDatePicker.todayInUtcMilliseconds())
-                        .build();
-
-        datePicker.addOnPositiveButtonClickListener(selection -> {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-            String formattedDate = sdf.format(new Date(selection));
-
-            String[] types = {"Breakfast", "Lunch", "Dinner"};
-            new android.app.AlertDialog.Builder(requireContext())
-                    .setTitle("Select Meal Type")
-                    .setItems(types, (dialog, which) -> {
-                        String selectedType = types[which];
-
-                        managePlanUseCase.addMeal(userId, formattedDate, selectedType, currentMeal, new ManagePlanUseCase.PlanCallback<Void>() {
-                            @Override
-                            public void onSuccess(Void data) {
-                                Toast.makeText(getContext(), "Added to " + selectedType + " plan", Toast.LENGTH_SHORT).show();
-                            }
-
-                            @Override
-                            public void onError(String error) {
-                                Toast.makeText(getContext(), "Error adding to plan: " + error, Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }).show();
-        });
-        datePicker.show(getChildFragmentManager(), "DATE_PICKER");
-    }
-
-    private void bindMealData(Meal meal) {
-        collapsingToolbar.setTitle(meal.getName());
-        toolbar.setTitle("");
         Glide.with(this).load(meal.getThumbUrl()).centerCrop().into(imgHeader);
-        tvArea.setText(meal.getArea() != null ? meal.getArea() : "");
-        tvCategory.setText(meal.getCategory() != null ? meal.getCategory() : "");
+        tvArea.setText(meal.getArea() != null ? meal.getArea() : "Unknown");
+        tvCategory.setText(meal.getCategory() != null ? meal.getCategory() : "Unknown");
+
         ingredientsAdapter.setList(meal.getIngredients());
         parseInstructions(meal.getInstructions());
         loadVideo(meal.getYoutubeUrl());
+    }
+
+    @Override
+    public void updateFavoriteIcon(boolean isFavorite) {
+        if (isFavorite) {
+            btnFavorite.setIconResource(R.drawable.ic_favorite_filled);
+            btnFavorite.setIconTintResource(R.color.error_red);
+            btnFavorite.setText("Saved");
+        } else {
+            btnFavorite.setIconResource(R.drawable.ic_favorite_border);
+            btnFavorite.setIconTintResource(R.color.white);
+            btnFavorite.setText("Favorite");
+        }
+    }
+
+    @Override
+    public void showMessage(String message) {
+        if (contentView != null) {
+            Snackbar.make(contentView, message, Snackbar.LENGTH_SHORT)
+                    .setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+                    .show();
+        }
+    }
+
+    @Override
+    public void showPlanDatePicker() {
+        MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                .setTitleText("Select Date for Meal")
+                .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                .build();
+
+        datePicker.addOnPositiveButtonClickListener(this::showMealTypeDialog);
+        datePicker.show(getChildFragmentManager(), "DATE_PICKER");
+    }
+
+    @Override
+    public void showMealTypeDialog(long dateSelection) {
+        String[] types = {"Breakfast", "Lunch", "Dinner"};
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Select Meal Type")
+                .setItems(types, (dialog, which) -> {
+                    presenter.addToPlan(dateSelection, types[which]);
+                }).show();
+    }
+
+    @Override
+    public void showLoading() {
+        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+        if (contentView != null) contentView.setAlpha(0.3f);
+    }
+
+    @Override
+    public void hideLoading() {
+        if (progressBar != null) progressBar.setVisibility(View.GONE);
+        if (contentView != null) contentView.setAlpha(1.0f);
     }
 
     private void parseInstructions(String rawInstructions) {
@@ -247,14 +232,15 @@ public class MealDetailsFragment extends Fragment {
     }
 
     private void updateStepUI(boolean animate, int direction) {
-        tvStepCounter.setText(String.format(Locale.US, "Step %d of %d", currentStepIndex + 1, instructionSteps.size()));
-        btnPrevStep.setEnabled(currentStepIndex > 0);
-        btnNextStep.setEnabled(currentStepIndex < instructionSteps.size() - 1);
+        tvStepCounter.setText(String.format(Locale.US, "STEP %d OF %d", currentStepIndex + 1, instructionSteps.size()));
+        btnPrevStep.setVisibility(currentStepIndex > 0 ? View.VISIBLE : View.INVISIBLE);
+        btnNextStep.setText(currentStepIndex == instructionSteps.size() - 1 ? "Finished" : "Next Step");
+
         String stepText = instructionSteps.get(currentStepIndex);
 
         if (animate) {
-            float translationOut = (direction > 0) ? -100f : 100f;
-            float translationIn = (direction > 0) ? 100f : -100f;
+            float translationOut = (direction > 0) ? -50f : 50f;
+            float translationIn = (direction > 0) ? 50f : -50f;
             tvInstructionText.animate()
                     .alpha(0f).translationX(translationOut)
                     .setDuration(150).setInterpolator(new AccelerateDecelerateInterpolator())
@@ -315,9 +301,53 @@ public class MealDetailsFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        toggleNavigation(true);
+        presenter.detach();
         super.onDestroyView();
-
         youtubePlayerView.release();
         mYouTubePlayer = null;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        toggleNavigation(false);
+    }
+
+    private void toggleNavigation(boolean show) {
+        if (getActivity() == null) return;
+
+        View bottomNav = getActivity().findViewById(R.id.bottom_nav);
+        View fabHome = getActivity().findViewById(R.id.fab_home);
+        View fabGlow = getActivity().findViewById(R.id.fab_glow);
+
+        int duration = 300;
+
+        float translationY = show ? 0f : 300f;
+        float alpha = show ? 1f : 0f;
+
+        if (bottomNav != null) {
+            bottomNav.animate()
+                    .translationY(translationY)
+                    .alpha(alpha)
+                    .setDuration(duration)
+                    .start();
+        }
+
+        if (fabHome != null) {
+            fabHome.animate()
+                    .translationY(translationY)
+                    .alpha(alpha)
+                    .setDuration(duration)
+                    .start();
+        }
+
+        if (fabGlow != null) {
+            fabGlow.animate()
+                    .translationY(translationY)
+                    .alpha(alpha)
+                    .setDuration(duration)
+                    .start();
+        }
     }
 }
