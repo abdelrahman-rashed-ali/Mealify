@@ -5,7 +5,12 @@ import com.rashed.mealify.domain.model.AuthUser;
 import com.rashed.mealify.domain.usecases.auth.GetCurrentUserUseCase;
 import com.rashed.mealify.domain.usecases.auth.LogoutUseCase;
 
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
 public class ProfilePresenter implements ProfileContract.Presenter {
+    private final CompositeDisposable disposables = new CompositeDisposable();
 
     private ProfileContract.View view;
     private final LogoutUseCase logoutUseCase;
@@ -30,15 +35,21 @@ public class ProfilePresenter implements ProfileContract.Presenter {
     public void loadUserProfile() {
         if (view == null) return;
 
-        getCurrentUserUseCase.execute(result -> {
-            if (view == null) return;
-            if (result instanceof Result.Success) {
-                AuthUser user = ((Result.Success<AuthUser>) result).data;
-                view.showUserName(user.firstName + " " + user.lastName);
-            } else {
-                view.showUserName("Guest");
-            }
-        });
+        disposables.add(getCurrentUserUseCase.execute()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        user -> {
+                            if (view != null) {
+                                view.showUserName(user.firstName + " " + user.lastName);
+                            }
+                        },
+                        throwable -> {
+                            if (view != null) {
+                                view.showUserName("Guest");
+                            }
+                        }
+                ));
     }
 
     @Override

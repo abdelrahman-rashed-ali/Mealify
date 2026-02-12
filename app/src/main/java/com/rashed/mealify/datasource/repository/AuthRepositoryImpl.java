@@ -1,9 +1,10 @@
 package com.rashed.mealify.datasource.repository;
 
-import com.rashed.mealify.common.ResultCallback;
 import com.rashed.mealify.datasource.auth.FirebaseAuthDataSource;
 import com.rashed.mealify.domain.model.AuthUser;
 import com.rashed.mealify.domain.repository.AuthRepository;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 
 public class AuthRepositoryImpl implements AuthRepository {
 
@@ -14,18 +15,18 @@ public class AuthRepositoryImpl implements AuthRepository {
     }
 
     @Override
-    public void register(String email, String password, String firstName, String lastName, ResultCallback<AuthUser> cb) {
-        dataSource.register(email, password, firstName, lastName, cb);
+    public Single<AuthUser> register(String email, String password, String firstName, String lastName) {
+        return dataSource.register(email, password, firstName, lastName);
     }
 
     @Override
-    public void login(String email, String password, ResultCallback<AuthUser> cb) {
-        dataSource.login(email, password, cb);
+    public Single<AuthUser> login(String email, String password) {
+        return dataSource.login(email, password);
     }
 
     @Override
-    public void loginWithGoogle(String idToken, ResultCallback<AuthUser> cb) {
-        dataSource.loginWithGoogle(idToken, cb);
+    public Single<AuthUser> loginWithGoogle(String idToken) {
+        return dataSource.loginWithGoogle(idToken);
     }
 
     @Override
@@ -34,32 +35,32 @@ public class AuthRepositoryImpl implements AuthRepository {
     }
 
     @Override
-    public void sendPasswordReset(String email, ResultCallback<Void> cb) {
-        dataSource.sendPasswordReset(email, cb);
+    public Completable sendPasswordReset(String email) {
+        return dataSource.sendPasswordReset(email);
     }
 
     @Override
-    public void getCurrentUser(ResultCallback<AuthUser> cb) {
-        dataSource.getCurrentUser(cb);
+    public Single<AuthUser> getCurrentUser() {
+        return dataSource.getCurrentUser();
     }
 
     @Override
-    public void updateName(String firstName, String lastName, ResultCallback<AuthUser> cb) {
-        dataSource.updateName(firstName, lastName, cb);
+    public Single<AuthUser> updateName(String firstName, String lastName) {
+        return dataSource.updateName(firstName, lastName);
     }
 
     @Override
-    public void sendEmailVerification(ResultCallback<Void> cb) {
-        dataSource.sendEmailVerification(cb);
+    public Completable sendEmailVerification() {
+        return dataSource.sendEmailVerification();
     }
 
     @Override
-    public void checkEmailVerified(ResultCallback<Boolean> cb) {
-        dataSource.checkEmailVerified(cb);
+    public Single<Boolean> checkEmailVerified() {
+        return dataSource.checkEmailVerified();
     }
 
     @Override
-    public void loginAnonymously(ResultCallback<AuthUser> cb) {
-        dataSource.loginAnonymously(cb);
+    public Single<AuthUser> loginAnonymously() {
+        return dataSource.loginAnonymously();
     }
 }

@@ -35,7 +35,6 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Reuse your existing Meal Card layout, or create a new one
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_meal_card, parent, false);
         return new ViewHolder(view);
     }

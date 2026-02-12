@@ -1,7 +1,7 @@
 package com.rashed.mealify.domain.usecases.auth;
 
-import com.rashed.mealify.common.ResultCallback;
 import com.rashed.mealify.domain.repository.AuthRepository;
+import io.reactivex.rxjava3.core.Single;
 
 public class CheckEmailVerifiedUseCase {
     private final AuthRepository repo;
@@ -10,7 +10,7 @@ public class CheckEmailVerifiedUseCase {
         this.repo = repo;
     }
 
-    public void execute(ResultCallback<Boolean> cb) {
-        repo.checkEmailVerified(cb);
+    public Single<Boolean> execute() {
+        return repo.checkEmailVerified();
     }
 }

@@ -74,4 +74,6 @@ dependencies {
     implementation ("com.pierfrancescosoffritti.androidyoutubeplayer:core:13.0.0")
 
     implementation ("com.google.android.material:material:1.11.0")
+    implementation("io.reactivex.rxjava3:rxjava:3.1.8")
+    implementation ("io.reactivex.rxjava3:rxandroid:3.0.2")
 }
