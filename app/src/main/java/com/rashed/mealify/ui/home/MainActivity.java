@@ -1,4 +1,4 @@
-package com.rashed.mealify;
+package com.rashed.mealify.ui.home;
 
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -16,6 +16,7 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.rashed.mealify.R;
 
 public class MainActivity extends AppCompatActivity {
 

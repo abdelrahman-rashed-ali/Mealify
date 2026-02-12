@@ -26,15 +26,6 @@
                 android:scaleType="centerCrop"
                 tools:src="@tools:sample/backgrounds/scenic" />
 
-            <ImageView
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:layout_alignParentEnd="true"
-                android:layout_margin="8dp"
-                android:src="@android:drawable/btn_star"
-                app:tint="@color/white"
-                android:background="@drawable/bg_search_bar"
-                android:padding="4dp"/>
         </RelativeLayout>
 
         <LinearLayout
@@ -53,15 +44,6 @@
                 android:textStyle="bold"
                 android:maxLines="1"
                 android:ellipsize="end"/>
-
-            <TextView
-                android:id="@+id/tv_meal_sub"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Healthy • 20 min"
-                android:textColor="#A0A0A0"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
