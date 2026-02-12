@@ -8,6 +8,9 @@ public interface ProfileContract {
         void showMessage(String message);
         void showUserName(String name);
         void navigateToAuth();
+        void showLoginDialog();
+        void setGuestMode();
+        void setUserMode();
     }
 
     interface Presenter {
@@ -16,5 +19,6 @@ public interface ProfileContract {
         void loadUserProfile();
         void logout();
         void onSyncClicked();
+        void onLoginClicked();
     }
 }

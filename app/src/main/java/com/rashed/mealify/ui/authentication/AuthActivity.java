@@ -13,7 +13,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
-import com.rashed.mealify.MainActivity;
+import com.rashed.mealify.ui.home.MainActivity;
 import com.rashed.mealify.R;
 
 public class AuthActivity extends AppCompatActivity {

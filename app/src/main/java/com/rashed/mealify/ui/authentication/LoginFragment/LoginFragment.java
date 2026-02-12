@@ -23,7 +23,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
-import com.rashed.mealify.MainActivity;
+import com.rashed.mealify.ui.home.MainActivity;
 import com.rashed.mealify.R;
 import com.rashed.mealify.datasource.auth.FirebaseAuthDataSource;
 import com.rashed.mealify.datasource.repository.AuthRepositoryImpl;

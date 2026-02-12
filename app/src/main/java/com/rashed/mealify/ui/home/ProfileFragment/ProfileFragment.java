@@ -1,6 +1,8 @@
 package com.rashed.mealify.ui.home.ProfileFragment;
 
+import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,7 +18,10 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.snackbar.Snackbar;
 import com.rashed.mealify.R;
 import com.rashed.mealify.datasource.auth.FirebaseAuthDataSource;
+import com.rashed.mealify.datasource.meals.local.MealsLocalDataSource;
+import com.rashed.mealify.datasource.meals.remote.MealsRemoteDataSource;
 import com.rashed.mealify.datasource.repository.AuthRepositoryImpl;
+import com.rashed.mealify.datasource.repository.SyncRepository;
 import com.rashed.mealify.domain.repository.AuthRepository;
 import com.rashed.mealify.domain.usecases.auth.GetCurrentUserUseCase;
 import com.rashed.mealify.domain.usecases.auth.LogoutUseCase;
@@ -25,9 +30,9 @@ import com.rashed.mealify.ui.authentication.AuthActivity;
 public class ProfileFragment extends Fragment implements ProfileContract.View {
 
     private ProfileContract.Presenter presenter;
-
     private TextView tvUserName;
-    private Button btnLogout, btnSync;
+    private Button btnAction;
+    private Button btnSync;
     private ProgressBar progressBar;
     private View rootView;
 
@@ -47,33 +52,63 @@ public class ProfileFragment extends Fragment implements ProfileContract.View {
 
     private void initViews(View view) {
         tvUserName = view.findViewById(R.id.tv_user_name);
-        btnLogout = view.findViewById(R.id.btn_logout);
+        btnAction = view.findViewById(R.id.btn_logout);
         btnSync = view.findViewById(R.id.btn_sync);
         progressBar = view.findViewById(R.id.progress_bar);
 
-        btnLogout.setOnClickListener(v -> presenter.logout());
         btnSync.setOnClickListener(v -> presenter.onSyncClicked());
+
     }
 
     private void initPresenter() {
-        AuthRepository repo = new AuthRepositoryImpl(new FirebaseAuthDataSource());
+        AuthRepositoryImpl authRepo = new AuthRepositoryImpl(new FirebaseAuthDataSource());
+        MealsLocalDataSource localDS = new MealsLocalDataSource(requireContext());
+        MealsRemoteDataSource remoteDS = new MealsRemoteDataSource();
+        SyncRepository syncRepo = new SyncRepository(localDS, remoteDS);
+
         presenter = new ProfilePresenter(
-                new LogoutUseCase(repo),
-                new GetCurrentUserUseCase(repo)
+                new LogoutUseCase(authRepo),
+                new GetCurrentUserUseCase(authRepo),
+                syncRepo
         );
         presenter.attach(this);
+    }
+
+
+    @Override
+    public void setGuestMode() {
+        btnAction.setText("Login");
+        btnAction.setBackgroundColor(Color.parseColor("#4CAF50"));
+        btnAction.setOnClickListener(v -> presenter.onLoginClicked());
+    }
+
+    @Override
+    public void setUserMode() {
+        btnAction.setText("Logout");
+        btnAction.setBackgroundColor(Color.parseColor("#F44336"));
+        btnAction.setOnClickListener(v -> presenter.logout());
+    }
+
+    @Override
+    public void showLoginDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Sync Not Available")
+                .setMessage("You must be logged in to sync your meal plan. Do you want to login now?")
+                .setPositiveButton("Login", (dialog, which) -> presenter.onLoginClicked())
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     @Override
     public void showLoading() {
         progressBar.setVisibility(View.VISIBLE);
-        btnLogout.setEnabled(false);
+        btnAction.setEnabled(false);
     }
 
     @Override
     public void hideLoading() {
         progressBar.setVisibility(View.GONE);
-        btnLogout.setEnabled(true);
+        btnAction.setEnabled(true);
     }
 
     @Override
