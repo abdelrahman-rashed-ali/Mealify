@@ -1,6 +1,7 @@
 package com.rashed.mealify.ui.home.MealDetailsFragment;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser; // Added import
 import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.usecases.meal.CheckMealStatusUseCase;
 import com.rashed.mealify.domain.usecases.meal.ManagePlanUseCase;
@@ -41,6 +42,11 @@ public class MealDetailsPresenter implements MealDetailsContract.Presenter {
         }
     }
 
+    private boolean isGuestUser() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        return user != null && user.isAnonymous();
+    }
+
     @Override
     public void attach(MealDetailsContract.View view) {
         this.view = view;
@@ -65,6 +71,11 @@ public class MealDetailsPresenter implements MealDetailsContract.Presenter {
     private void checkFavoriteStatus() {
         if (currentMeal == null) return;
 
+        if (isGuestUser()) {
+            if (view != null) view.hideLoading();
+            return;
+        }
+
         disposables.add(checkMealStatusUseCase.isFavorite(userId, currentMeal.getId())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -86,6 +97,11 @@ public class MealDetailsPresenter implements MealDetailsContract.Presenter {
     public void toggleFavorite() {
         if (currentMeal == null) return;
 
+        if (isGuestUser()) {
+            if (view != null) view.showGuestModeDialog();
+            return;
+        }
+
         boolean previousState = isFavorite;
         isFavorite = !isFavorite;
 
@@ -100,7 +116,6 @@ public class MealDetailsPresenter implements MealDetailsContract.Presenter {
                 .subscribe(
                         () -> {  },
                         throwable -> {
-
                             isFavorite = previousState;
                             if (view != null) {
                                 view.updateFavoriteIcon(isFavorite);
@@ -113,6 +128,11 @@ public class MealDetailsPresenter implements MealDetailsContract.Presenter {
     @Override
     public void addToPlan(long dateSelection, String mealType) {
         if (view == null || currentMeal == null) return;
+
+        if (isGuestUser()) {
+            view.showGuestModeDialog();
+            return;
+        }
 
         view.showLoading();
 
