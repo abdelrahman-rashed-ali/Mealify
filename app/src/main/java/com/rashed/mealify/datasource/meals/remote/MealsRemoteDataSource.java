@@ -2,7 +2,9 @@ package com.rashed.mealify.datasource.meals.remote;
 
 import com.rashed.mealify.common.Result;
 import com.rashed.mealify.datasource.meals.remote.dto.CategoriesResponse;
-import com.rashed.mealify.datasource.meals.remote.dto.ListResponse;
+import com.rashed.mealify.datasource.meals.remote.dto.ListAreas;
+import com.rashed.mealify.datasource.meals.remote.dto.ListCategories;
+import com.rashed.mealify.datasource.meals.remote.dto.ListIngredients;
 import com.rashed.mealify.datasource.meals.remote.dto.MealsResponse;
 import com.rashed.mealify.datasource.network.ApiConnection;
 
@@ -38,15 +40,15 @@ public class MealsRemoteDataSource {
         return safeCall(apiDao.getCategories(), "Failed to load categories");
     }
 
-    public Result<ListResponse> listCategories() {
+    public Result<ListCategories> listCategories() {
         return safeCall(apiDao.listCategories("list"), "Failed to load categories list");
     }
 
-    public Result<ListResponse> listAreas() {
+    public Result<ListAreas> listAreas() {
         return safeCall(apiDao.listAreas("list"), "Failed to load areas list");
     }
 
-    public Result<ListResponse> listIngredients() {
+    public Result<ListIngredients> listIngredients() {
         return safeCall(apiDao.listIngredients("list"), "Failed to load ingredients list");
     }
 

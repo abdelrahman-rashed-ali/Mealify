@@ -1,7 +1,9 @@
 package com.rashed.mealify.datasource.meals.remote;
 
 import com.rashed.mealify.datasource.meals.remote.dto.CategoriesResponse;
-import com.rashed.mealify.datasource.meals.remote.dto.ListResponse;
+import com.rashed.mealify.datasource.meals.remote.dto.ListAreas;
+import com.rashed.mealify.datasource.meals.remote.dto.ListCategories;
+import com.rashed.mealify.datasource.meals.remote.dto.ListIngredients;
 import com.rashed.mealify.datasource.meals.remote.dto.MealsResponse;
 
 import retrofit2.Call;
@@ -25,13 +27,13 @@ public interface ApiDao {
     Call<CategoriesResponse> getCategories();
 
     @GET("list.php")
-    Call<ListResponse> listCategories(@Query("c") String list);
+    Call<ListCategories> listCategories(@Query("c") String list);
 
     @GET("list.php")
-    Call<ListResponse> listAreas(@Query("a") String list);
+    Call<ListAreas> listAreas(@Query("a") String list);
 
     @GET("list.php")
-    Call<ListResponse> listIngredients(@Query("i") String list);
+    Call<ListIngredients> listIngredients(@Query("i") String list);
 
     @GET("filter.php")
     Call<MealsResponse> filterByIngredient(@Query("i") String ingredient);

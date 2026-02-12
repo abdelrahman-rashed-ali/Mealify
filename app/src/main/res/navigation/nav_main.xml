@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_main"
+    app:startDestination="@id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.rashed.mealify.ui.home.HomeFragment.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home">
+
+        <action
+            android:id="@+id/action_nav_home_to_mealDetailsFragment"
+            app:destination="@id/mealDetailsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/mealDetailsFragment"
+        android:name="com.rashed.mealify.ui.home.MealDetailsFragment.MealDetailsFragment"
+        android:label="MealDetailsFragment"
+        tools:layout="@layout/fragment_meal_details">
+
+        <argument
+            android:name="meal"
+            app:argType="com.rashed.mealify.domain.model.Meal" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_favourites"
+        android:name="com.rashed.mealify.ui.home.FavouritesFragment.FavouritesFragment"
+        android:label="Favourites"
+        tools:layout="@layout/fragment_favourites" />
+
+    <fragment
+        android:id="@+id/nav_search"
+        android:name="com.rashed.mealify.ui.home.SearchFragment.SearchFragment"
+        android:label="Search"
+        tools:layout="@layout/fragment_search">
+
+        <action
+            android:id="@+id/action_nav_search_to_mealDetailsFragment"
+            app:destination="@id/mealDetailsFragment" />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_planner"
+        android:name="com.rashed.mealify.ui.home.PlannerFragment.PlannerFragment"
+        android:label="Planner"
+        tools:layout="@layout/fragment_planner">
+        <action
+            android:id="@+id/action_nav_planner_to_mealDetailsFragment"
+            app:destination="@id/mealDetailsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_profile"
+        android:name="com.rashed.mealify.ui.home.ProfileFragment.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile" />
+
+</navigation>

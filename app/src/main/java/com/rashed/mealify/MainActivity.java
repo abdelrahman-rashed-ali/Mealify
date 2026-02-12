@@ -1,50 +1,90 @@
 package com.rashed.mealify;
 
-import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.fragment.app.FragmentTransaction;
-import com.ramotion.paperonboarding.PaperOnboardingFragment;
-import com.ramotion.paperonboarding.PaperOnboardingPage;
-import java.util.ArrayList;
+import androidx.navigation.NavController;
+import androidx.navigation.NavOptions;
+import androidx.navigation.fragment.NavHostFragment;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class MainActivity extends AppCompatActivity {
+
+    private NavController navController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+
+        View mainLayout = findViewById(R.id.main);
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
+        FloatingActionButton fabHome = findViewById(R.id.fab_home);
+
+        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.nav_host_fragment);
+
+        if (navHostFragment != null) {
+            navController = navHostFragment.getNavController();
+        }
+
+
+        bottomNav.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+
+            if (item.isChecked()) {
+                return false;
+            }
+
+            NavOptions navOptions = new NavOptions.Builder()
+                    .setLaunchSingleTop(true)
+                    .setRestoreState(true)
+                    .setEnterAnim(R.anim.nav_enter)
+                    .setExitAnim(R.anim.nav_exit)
+                    .setPopEnterAnim(R.anim.nav_enter)
+                    .setPopExitAnim(R.anim.nav_exit)
+                    .build();
+
+
+            navController.navigate(itemId, null, navOptions);
+
+            return true;
+        });
+
+
+        fabHome.setOnClickListener(v -> {
+            if (bottomNav.getSelectedItemId() != R.id.nav_home) {
+                bottomNav.setSelectedItemId(R.id.nav_home);
+            }
+        });
+
+        ViewCompat.setOnApplyWindowInsetsListener(mainLayout, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            bottomNav.setPadding(0, 0, 0, systemBars.bottom);
+
+            ViewGroup.MarginLayoutParams fabParams = (ViewGroup.MarginLayoutParams) fabHome.getLayoutParams();
+            int originalMargin = (int) (30 * getResources().getDisplayMetrics().density);
+            fabParams.bottomMargin = originalMargin + systemBars.bottom;
+            fabHome.setLayoutParams(fabParams);
+
             return insets;
         });
-        Log.d("TAG-MainActivity", "API : " + BuildConfig.API_BASE_URL);
 
-        PaperOnboardingPage scr1 = new PaperOnboardingPage("Hotels",
-                "All hotels and hostels are sorted by hospitality rating",
-                Color.parseColor("#678FB4"), R.drawable.ic_launcher_background, R.drawable.ic_launcher_background);
-        PaperOnboardingPage scr2 = new PaperOnboardingPage("Banks",
-                "We carefully verify all banks before add them into the app",
-                Color.parseColor("#65B0B4"), R.drawable.ic_launcher_background, R.drawable.ic_launcher_background);
-        PaperOnboardingPage scr3 = new PaperOnboardingPage("Stores",
-                "All local stores are categorized for your convenience",
-                Color.parseColor("#9B90BC"), R.drawable.ic_launcher_background, R.drawable.ic_launcher_background);
-
-        ArrayList<PaperOnboardingPage> elements = new ArrayList<>();
-        elements.add(scr1);
-        elements.add(scr2);
-        elements.add(scr3);
-
-        PaperOnboardingFragment onBoardingFragment = PaperOnboardingFragment.newInstance(elements);
-        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.add(R.id.fragment_container, onBoardingFragment);
-        fragmentTransaction.commit();
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            MenuItem item = bottomNav.getMenu().findItem(destination.getId());
+            if (item != null) {
+                item.setChecked(true);
+            }
+        });
     }
 }
