@@ -1,28 +1,23 @@
 package com.rashed.mealify.ui.home.SearchFragment;
 
-import android.os.Handler;
-import android.os.Looper;
-
-import com.rashed.mealify.common.Result;
 import com.rashed.mealify.domain.model.Area;
 import com.rashed.mealify.domain.model.Category;
 import com.rashed.mealify.domain.model.Ingredient;
 import com.rashed.mealify.domain.model.Meal;
-import com.rashed.mealify.domain.usecases.meal.FilterByAreaUseCase;
-import com.rashed.mealify.domain.usecases.meal.FilterByCategoryUseCase;
-import com.rashed.mealify.domain.usecases.meal.FilterByIngredientUseCase;
 import com.rashed.mealify.domain.usecases.meal.GetAreasUseCase;
 import com.rashed.mealify.domain.usecases.meal.GetCategoriesUseCase;
 import com.rashed.mealify.domain.usecases.meal.GetIngredientsUseCase;
-import com.rashed.mealify.domain.usecases.meal.GetMealDetailsUseCase;
-import com.rashed.mealify.domain.usecases.meal.SearchMealsByNameUseCase;
 import com.rashed.mealify.domain.usecases.meal.SearchMealsUseCase;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 
 public class SearchPresenter implements SearchContract.Presenter {
 
@@ -33,16 +28,15 @@ public class SearchPresenter implements SearchContract.Presenter {
     private final GetAreasUseCase getAreasUseCase;
     private final GetIngredientsUseCase getIngredientsUseCase;
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final CompositeDisposable disposables = new CompositeDisposable();
+    private final PublishSubject<String> searchSubject = PublishSubject.create();
 
-    private String currentQuery = "";
     private String selectedCategory = null;
     private String selectedArea = null;
     private String selectedIngredient = null;
 
-    private Runnable searchRunnable;
-    private static final long DEBOUNCE_DELAY_MS = 350;
+    private String lastQuery = "";
+    private List<Meal> lastResults = new ArrayList<>();
 
     public SearchPresenter(
             SearchMealsUseCase searchMealsUseCase,
@@ -54,6 +48,8 @@ public class SearchPresenter implements SearchContract.Presenter {
         this.getCategoriesUseCase = getCategoriesUseCase;
         this.getAreasUseCase = getAreasUseCase;
         this.getIngredientsUseCase = getIngredientsUseCase;
+
+        setupSearchPipeline();
     }
 
     @Override
@@ -62,60 +58,114 @@ public class SearchPresenter implements SearchContract.Presenter {
         loadFiltersLists();
     }
 
-    private void loadFiltersLists() {
-        executor.execute(() -> {
-            Result<List<Category>> cats = getCategoriesUseCase.execute();
-            if (cats instanceof Result.Success && view != null) {
-                mainHandler.post(() -> view.populateCategories(((Result.Success<List<Category>>) cats).data));
-            }
-        });
-
-        executor.execute(() -> {
-            Result<List<Area>> areas = getAreasUseCase.execute();
-            if (areas instanceof Result.Success && view != null) {
-                List<Area> areaList = ((Result.Success<List<Area>>) areas).data;
-                List<String> names = new ArrayList<>();
-                for (Area a : areaList) names.add(a.getName()); // عدّلي getName حسب Area model عندك
-                mainHandler.post(() -> view.populateAreas(names));
-            }
-        });
-
-        executor.execute(() -> {
-            Result<List<Ingredient>> ings = getIngredientsUseCase.execute();
-            if (ings instanceof Result.Success && view != null) {
-                mainHandler.post(() -> view.populateIngredients(((Result.Success<List<Ingredient>>) ings).data));
-            }
-        });
-    }
-
     @Override
     public void detach() {
         view = null;
-        if (searchRunnable != null) mainHandler.removeCallbacks(searchRunnable);
+        disposables.clear();
+    }
+
+
+    private void loadFiltersLists() {
+        disposables.add(
+                Single.zip(
+                                getCategoriesUseCase.execute(),     // Single<List<Category>>
+                                getAreasUseCase.execute(),          // Single<List<Area>>
+                                getIngredientsUseCase.execute(),    // Single<List<Ingredient>>
+                                FiltersBundle::new
+                        )
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSubscribe(d -> { if (view != null) view.showLoading(); })
+                        .doFinally(() -> { if (view != null) view.hideLoading(); })
+                        .subscribe(
+                                bundle -> {
+                                    if (view == null) return;
+
+                                    view.populateCategories(bundle.categories);
+
+                                    List<String> areaNames = new ArrayList<>();
+                                    for (Area a : bundle.areas) {
+                                        if (a != null && a.getName() != null) areaNames.add(a.getName());
+                                    }
+                                    view.populateAreas(areaNames);
+
+                                    view.populateIngredients(bundle.ingredients);
+                                },
+                                throwable -> {
+                                    throwable.printStackTrace();
+                                    if (view != null) view.showErrorState(throwable.getMessage());
+                                }
+                        )
+        );
+    }
+
+    private void setupSearchPipeline() {
+        disposables.add(
+                searchSubject
+                        .map(q -> q == null ? "" : q.trim())
+                        .debounce(350, TimeUnit.MILLISECONDS)
+                        .distinctUntilChanged()
+                        .switchMapSingle(query -> {
+                            if (query.isEmpty()) return Single.just(new ArrayList<>());
+
+                            return Single.just(query)
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .doOnSuccess(q -> { if (view != null) view.showLoading(); })
+                                    .observeOn(Schedulers.io())
+                                    .flatMap(searchMealsUseCase::execute);
+                        })
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(
+                                results -> {
+                                    if (view == null) return;
+
+                                    view.hideLoading();
+
+                                    lastResults = (results == null) ? new ArrayList<>() : (List<Meal>) results;
+
+                                    renderFilteredResults();
+                                },
+                                throwable -> {
+                                    throwable.printStackTrace();
+                                    if (view != null) {
+                                        view.hideLoading();
+                                        view.showErrorState(throwable.getMessage());
+                                    }
+                                }
+                        )
+        );
     }
 
     @Override
     public void search(String query) {
-        currentQuery = (query == null) ? "" : query;
-        postSearch();
+        lastQuery = query == null ? "" : query.trim();
+
+        if (lastQuery.isEmpty()) {
+            lastResults = new ArrayList<>();
+            if (view != null) view.showEmptyState();
+            return;
+        }
+
+        searchSubject.onNext(lastQuery);
     }
 
     @Override
     public void toggleCategoryFilter(String category) {
         selectedCategory = (selectedCategory != null && selectedCategory.equals(category)) ? null : category;
-        postSearch();
+        renderFilteredResults();
     }
 
     @Override
     public void toggleAreaFilter(String area) {
         selectedArea = (selectedArea != null && selectedArea.equals(area)) ? null : area;
-        postSearch();
+        renderFilteredResults();
     }
 
     @Override
     public void toggleIngredientFilter(String ingredient) {
         selectedIngredient = (selectedIngredient != null && selectedIngredient.equals(ingredient)) ? null : ingredient;
-        postSearch();
+        renderFilteredResults();
     }
 
     @Override
@@ -123,58 +173,35 @@ public class SearchPresenter implements SearchContract.Presenter {
         selectedCategory = null;
         selectedArea = null;
         selectedIngredient = null;
-        postSearch();
+        renderFilteredResults();
     }
 
-    private void postSearch() {
+    private void renderFilteredResults() {
         if (view == null) return;
 
-        if (searchRunnable != null) mainHandler.removeCallbacks(searchRunnable);
-
-        String q = currentQuery.trim();
-        if (q.isEmpty()) {
-            // UX: اطلب من المستخدم يكتب حاجة بدل ما نعمل empty
+        if (lastQuery == null || lastQuery.trim().isEmpty()) {
             view.showEmptyState();
             return;
         }
 
-        view.showLoading();
-        searchRunnable = this::executeSearch;
-        mainHandler.postDelayed(searchRunnable, DEBOUNCE_DELAY_MS);
-    }
-
-    private void executeSearch() {
-        executor.execute(() -> {
-            Result<List<Meal>> result = searchMealsUseCase.execute(currentQuery.trim());
-
-            mainHandler.post(() -> {
-                if (view == null) return;
-                view.hideLoading();
-
-                if (result instanceof Result.Success) {
-                    List<Meal> base = ((Result.Success<List<Meal>>) result).data;
-                    List<Meal> filtered = applyFilters(base);
-
-                    if (filtered.isEmpty()) view.showEmptyState();
-                    else view.showResults(filtered);
-
-                } else {
-                    view.showErrorState(((Result.Error) result).message);
-                }
-            });
-        });
+        List<Meal> filtered = applyFilters(lastResults);
+        if (filtered.isEmpty()) view.showEmptyState();
+        else view.showResults(filtered);
     }
 
     private List<Meal> applyFilters(List<Meal> origin) {
-        List<Meal> out = new ArrayList<>();
-        if (origin == null) return out;
+        if (origin == null) return new ArrayList<>();
 
+        List<Meal> out = new ArrayList<>();
         for (Meal m : origin) {
+            if (m == null) continue;
+
             if (selectedCategory != null && !safe(m.getCategory()).equalsIgnoreCase(selectedCategory)) continue;
             if (selectedArea != null && !safe(m.getArea()).equalsIgnoreCase(selectedArea)) continue;
 
-            // Ingredient filter: لازم Meal model يكون فيه ingredients (List<String>) أو أي طريقة تتحقق منها
-            if (selectedIngredient != null && !mealHasIngredient(m, selectedIngredient)) continue;
+            if (selectedIngredient != null) {
+                if (m.getIngredients() != null && !mealHasIngredient(m, selectedIngredient)) continue;
+            }
 
             out.add(m);
         }
@@ -182,10 +209,12 @@ public class SearchPresenter implements SearchContract.Presenter {
     }
 
     private boolean mealHasIngredient(Meal m, String ing) {
-        if (m.getIngredients() == null) return false;
-        for (Meal.Ingredient x : m.getIngredients()) {
-            if (x.name != null && x.name.equalsIgnoreCase(ing)) return true;
-        }
+        try {
+            for (Object obj : m.getIngredients()) {
+                String name = (String) obj.getClass().getField("name").get(obj);
+                if (name != null && name.equalsIgnoreCase(ing)) return true;
+            }
+        } catch (Exception ignore) {}
         return false;
     }
 
@@ -193,8 +222,18 @@ public class SearchPresenter implements SearchContract.Presenter {
 
     @Override
     public void onMealClicked(Meal meal) {
-        if (view == null) return;
-        view.navigateToDetails(meal);
+        if (view != null) view.navigateToDetails(meal);
+    }
+
+    static class FiltersBundle {
+        final List<Category> categories;
+        final List<Area> areas;
+        final List<Ingredient> ingredients;
+
+        FiltersBundle(List<Category> categories, List<Area> areas, List<Ingredient> ingredients) {
+            this.categories = categories != null ? categories : new ArrayList<>();
+            this.areas = areas != null ? areas : new ArrayList<>();
+            this.ingredients = ingredients != null ? ingredients : new ArrayList<>();
+        }
     }
 }
-

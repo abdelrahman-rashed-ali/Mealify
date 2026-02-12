@@ -72,8 +72,10 @@ dependencies {
     implementation ("androidx.navigation:navigation-fragment:2.7.7")
     implementation ("androidx.navigation:navigation-ui:2.7.7")
     implementation ("com.pierfrancescosoffritti.androidyoutubeplayer:core:13.0.0")
-
+    implementation("com.squareup.retrofit2:adapter-rxjava3:2.11.0")
     implementation ("com.google.android.material:material:1.11.0")
     implementation("io.reactivex.rxjava3:rxjava:3.1.8")
     implementation ("io.reactivex.rxjava3:rxandroid:3.0.2")
+    implementation("androidx.room:room-rxjava3:2.8.4")
+
 }

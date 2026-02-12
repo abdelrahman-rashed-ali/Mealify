@@ -6,41 +6,38 @@ import com.rashed.mealify.datasource.meals.remote.dto.ListCategories;
 import com.rashed.mealify.datasource.meals.remote.dto.ListIngredients;
 import com.rashed.mealify.datasource.meals.remote.dto.MealsResponse;
 
-import retrofit2.Call;
+import io.reactivex.rxjava3.core.Single;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
 
 public interface ApiDao {
     @GET("search.php")
-    Call<MealsResponse> searchMealsByName(@Query("s") String name);
-
-    @GET("search.php")
-    Call<MealsResponse> listMealsByFirstLetter(@Query("f") String letter);
+    Single<MealsResponse> searchMealsByName(@Query("s") String name);
 
     @GET("lookup.php")
-    Call<MealsResponse> lookupMealById(@Query("i") String id);
+    Single<MealsResponse> lookupMealById(@Query("i") String id);
 
     @GET("random.php")
-    Call<MealsResponse> getRandomMeal();
+    Single<MealsResponse> getRandomMeal();
 
     @GET("categories.php")
-    Call<CategoriesResponse> getCategories();
+    Single<CategoriesResponse> getCategories();
 
     @GET("list.php")
-    Call<ListCategories> listCategories(@Query("c") String list);
+    Single<ListCategories> listCategories(@Query("c") String list);
 
     @GET("list.php")
-    Call<ListAreas> listAreas(@Query("a") String list);
+    Single<ListAreas> listAreas(@Query("a") String list);
 
     @GET("list.php")
-    Call<ListIngredients> listIngredients(@Query("i") String list);
+    Single<ListIngredients> listIngredients(@Query("i") String list);
 
     @GET("filter.php")
-    Call<MealsResponse> filterByIngredient(@Query("i") String ingredient);
+    Single<MealsResponse> filterByIngredient(@Query("i") String ingredient);
 
     @GET("filter.php")
-    Call<MealsResponse> filterByCategory(@Query("c") String category);
+    Single<MealsResponse> filterByCategory(@Query("c") String category);
 
     @GET("filter.php")
-    Call<MealsResponse> filterByArea(@Query("a") String area);
+    Single<MealsResponse> filterByArea(@Query("a") String area);
 }

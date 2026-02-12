@@ -11,6 +11,9 @@ import com.rashed.mealify.datasource.meals.local.entities.PlannedMealDetails;
 import com.rashed.mealify.datasource.meals.local.entities.PlannedMealEntity;
 import java.util.List;
 
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
+
 public class MealsLocalDataSource {
     private final MealDao mealDao;
     private final FavoriteDao favoriteDao;
@@ -23,27 +26,33 @@ public class MealsLocalDataSource {
         this.planDao = db.planDao();
     }
 
-    public void upsertMeal(MealEntity meal) { mealDao.upsert(meal); }
-    public MealEntity getMealById(String mealId) { return mealDao.getById(mealId); }
-    public void addFavorite(String uid, MealEntity meal) {
-        mealDao.upsert(meal);
-        favoriteDao.add(new FavoriteEntity(uid, meal.idMeal, System.currentTimeMillis()));
-    }
-    public void removeFavorite(String uid, String mealId) { favoriteDao.remove(uid, mealId); }
-    public boolean isFavorite(String uid, String mealId) { return favoriteDao.exists(uid, mealId) > 0; }
-    public List<MealEntity> getFavorites(String uid) { return favoriteDao.getFavoritesMeals(uid); }
-
-
-    public void addMealToPlan(String uid, String date, String mealType, MealEntity meal) {
-        mealDao.upsert(meal);
-        planDao.addToPlan(new PlannedMealEntity(uid, date, meal.idMeal, mealType, System.currentTimeMillis()));
+    public Completable addFavorite(String uid, MealEntity meal) {
+        return mealDao.upsert(meal)
+                .andThen(favoriteDao.add(new FavoriteEntity(uid, meal.idMeal, System.currentTimeMillis())));
     }
 
-    public void removeMealFromPlan(String uid, String date, String mealId) {
-        planDao.removeFromPlan(uid, date, mealId);
+    public Completable removeFavorite(String uid, String mealId) {
+        return favoriteDao.remove(uid, mealId);
     }
 
-    public List<PlannedMealDetails> getPlanForDay(String uid, String date) {
+    public Single<Boolean> isFavorite(String uid, String mealId) {
+        return favoriteDao.exists(uid, mealId).map(count -> count > 0);
+    }
+
+    public Single<List<MealEntity>> getFavorites(String uid) {
+        return favoriteDao.getFavoritesMeals(uid);
+    }
+
+    public Completable addMealToPlan(String uid, String date, String mealType, MealEntity meal) {
+        return mealDao.upsert(meal)
+                .andThen(planDao.addToPlan(new PlannedMealEntity(uid, date, meal.idMeal, mealType, System.currentTimeMillis())));
+    }
+
+    public Completable removeMealFromPlan(String uid, String date, String mealId) {
+        return planDao.removeFromPlan(uid, date, mealId);
+    }
+
+    public Single<List<PlannedMealDetails>> getPlanForDay(String uid, String date) {
         return planDao.getDayPlanDetails(uid, date);
     }
 }

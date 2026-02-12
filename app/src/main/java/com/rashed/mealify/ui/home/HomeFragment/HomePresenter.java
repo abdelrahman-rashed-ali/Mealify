@@ -1,11 +1,5 @@
 package com.rashed.mealify.ui.home.HomeFragment;
 
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
-
-import com.rashed.mealify.common.Result;
-import com.rashed.mealify.domain.model.AuthUser;
 import com.rashed.mealify.domain.model.Category;
 import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.usecases.auth.GetCurrentUserUseCase;
@@ -17,10 +11,9 @@ import com.rashed.mealify.domain.usecases.meal.GetRandomMealUseCase;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -33,17 +26,15 @@ public class HomePresenter implements HomeContract.Presenter {
     private final FilterByCategoryUseCase filterMealsUseCase;
     private final GetMealDetailsUseCase getMealDetailsUseCase;
     private final GetCurrentUserUseCase getCurrentUserUseCase;
+
     private final CompositeDisposable disposables = new CompositeDisposable();
-    // Static Cache
+
     private static Meal cachedHeroMeal;
     private static List<Category> cachedCategories;
-    private static Map<String, List<Meal>> cachedCategoryMealsMap = new HashMap<>();
+    private static final Map<String, List<Meal>> cachedCategoryMealsMap = new HashMap<>();
     private static String currentSelectedCategory = "";
-    private static String cachedUserName = "";
+    private static String cachedUserName = "Guest";
     private static boolean isInitLoadComplete = false;
-
-    private final ExecutorService executorService;
-    private final Handler mainHandler;
 
     public HomePresenter(GetRandomMealUseCase getRandomMealUseCase,
                          GetCategoriesUseCase getCategoriesUseCase,
@@ -55,9 +46,6 @@ public class HomePresenter implements HomeContract.Presenter {
         this.filterMealsUseCase = filterMealsUseCase;
         this.getMealDetailsUseCase = getMealDetailsUseCase;
         this.getCurrentUserUseCase = getCurrentUserUseCase;
-
-        this.executorService = Executors.newFixedThreadPool(4);
-        this.mainHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
@@ -68,6 +56,7 @@ public class HomePresenter implements HomeContract.Presenter {
     @Override
     public void detach() {
         this.view = null;
+        disposables.clear();
     }
 
     @Override
@@ -79,82 +68,64 @@ public class HomePresenter implements HomeContract.Presenter {
 
         if (view != null) view.showLoading();
 
-        executorService.execute(() -> {
-            try {
-                Result<Meal> heroResult = getRandomMealUseCase.execute();
-                Result<List<Category>> catResult = getCategoriesUseCase.execute();
-
-                disposables.add(getCurrentUserUseCase.execute()
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(
-                                user -> {
-                                    cachedUserName = user.firstName;
-                                },
-                                throwable -> {
-                                    cachedUserName = "Guest";
-                                }
-                        ));
-
-                mainHandler.post(() -> {
-                    if (view == null) return;
-
-                    view.showUserName(cachedUserName);
-
-                    if (heroResult instanceof Result.Success) {
-                        cachedHeroMeal = ((Result.Success<Meal>) heroResult).data;
-                        view.displayHeroMeal(cachedHeroMeal);
-                    }
-
-                    if (catResult instanceof Result.Success) {
-                        cachedCategories = ((Result.Success<List<Category>>) catResult).data;
-                        view.displayCategories(cachedCategories);
-
-                        if (!cachedCategories.isEmpty()) {
-                            Category first = cachedCategories.get(0);
-                            selectCategory(first);
+        disposables.add(getCurrentUserUseCase.execute()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        user -> {
+                            cachedUserName = user.firstName;
+                            if (view != null) view.showUserName(cachedUserName);
+                        },
+                        throwable -> {
+                            cachedUserName = "Guest";
+                            if (view != null) view.showUserName(cachedUserName);
                         }
-                    } else if (catResult instanceof Result.Error) {
-                        String msg = ((Result.Error<?>) catResult).message;
-                        view.showErrorMessage(msg);
-                    }
+                ));
 
-                    isInitLoadComplete = true;
-                    view.showContent();
-                    view.hideLoading();
-                });
+        disposables.add(Single.zip(
+                        getRandomMealUseCase.execute(),
+                        getCategoriesUseCase.execute(),
+                        (hero, categories) -> {
+                            cachedHeroMeal = hero;
+                            cachedCategories = categories;
+                            return true;
+                        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        success -> {
+                            if (view == null) return;
+                            view.displayHeroMeal(cachedHeroMeal);
+                            view.displayCategories(cachedCategories);
 
-            } catch (Exception e) {
-                Log.e("HomePresenter", "Error loading initial data", e);
-                mainHandler.post(() -> {
-                    if (view != null) {
-                        view.hideLoading();
-                        view.showErrorMessage("An unexpected error occurred.");
-                    }
-                });
-            }
-        });
+                            if (!cachedCategories.isEmpty() && currentSelectedCategory.isEmpty()) {
+                                selectCategory(cachedCategories.get(0));
+                            }
+
+                            isInitLoadComplete = true;
+                            view.showContent();
+                            view.hideLoading();
+                        },
+                        throwable -> {
+                            if (view != null) {
+                                view.hideLoading();
+                                view.showErrorMessage(throwable.getMessage());
+                            }
+                        }
+                ));
     }
 
     private void restoreState() {
         if (view == null) return;
-
         view.hideLoading();
         view.showContent();
+        view.showUserName(cachedUserName);
 
-        view.showUserName(cachedUserName.isEmpty() ? "Guest" : cachedUserName);
-
-        if (cachedHeroMeal != null) {
-            view.displayHeroMeal(cachedHeroMeal);
-        }
-
-        if (cachedCategories != null) {
-            view.displayCategories(cachedCategories);
-        }
+        if (cachedHeroMeal != null) view.displayHeroMeal(cachedHeroMeal);
+        if (cachedCategories != null) view.displayCategories(cachedCategories);
 
         if (!currentSelectedCategory.isEmpty()) {
             view.updateCategoryTitle("Explore " + currentSelectedCategory);
-
             if (cachedCategoryMealsMap.containsKey(currentSelectedCategory)) {
                 view.displayCategoryMeals(cachedCategoryMealsMap.get(currentSelectedCategory));
             } else {
@@ -178,61 +149,47 @@ public class HomePresenter implements HomeContract.Presenter {
 
         if (view != null) view.showGridLoading();
 
-        executorService.execute(() -> {
-            try {
-                Result<List<Meal>> result = filterMealsUseCase.execute(categoryName);
-
-                mainHandler.post(() -> {
-                    if (view == null) return;
-                    view.hideGridLoading();
-
-                    if (result instanceof Result.Success) {
-                        List<Meal> meals = ((Result.Success<List<Meal>>) result).data;
-                        cachedCategoryMealsMap.put(categoryName, meals);
-
-                        if (currentSelectedCategory.equals(categoryName)) {
-                            view.displayCategoryMeals(meals);
+        disposables.add(filterMealsUseCase.execute(categoryName)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        meals -> {
+                            cachedCategoryMealsMap.put(categoryName, meals);
+                            if (view != null && currentSelectedCategory.equals(categoryName)) {
+                                view.hideGridLoading();
+                                view.displayCategoryMeals(meals);
+                            }
+                        },
+                        throwable -> {
+                            if (view != null) {
+                                view.hideGridLoading();
+                                view.showErrorMessage("Failed to filter: " + throwable.getMessage());
+                            }
                         }
-                    } else {
-                        view.showErrorMessage("Failed to load meals");
-                    }
-                });
-            } catch (Exception e) {
-                mainHandler.post(() -> {
-                    if (view != null) view.hideGridLoading();
-                });
-            }
-        });
+                ));
     }
 
     @Override
     public void onMealClicked(String mealId) {
         if (view != null) view.showLoading();
 
-        executorService.execute(() -> {
-            try {
-                Result<Meal> result = getMealDetailsUseCase.execute(mealId);
-
-                mainHandler.post(() -> {
-                    if (view == null) return;
-                    view.hideLoading();
-
-                    if (result instanceof Result.Success) {
-                        view.navigateToDetails(((Result.Success<Meal>) result).data);
-                    } else {
-                        String msg = result instanceof Result.Error ? ((Result.Error<?>) result).message : "Failed to load details";
-                        view.showErrorMessage(msg);
-                    }
-                });
-            } catch (Exception e) {
-                mainHandler.post(() -> {
-                    if (view != null) {
-                        view.hideLoading();
-                        view.showErrorMessage("Error opening meal details");
-                    }
-                });
-            }
-        });
+        disposables.add(getMealDetailsUseCase.execute(mealId)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        meal -> {
+                            if (view != null) {
+                                view.hideLoading();
+                                view.navigateToDetails(meal);
+                            }
+                        },
+                        throwable -> {
+                            if (view != null) {
+                                view.hideLoading();
+                                view.showErrorMessage(throwable.getMessage());
+                            }
+                        }
+                ));
     }
 
     @Override
