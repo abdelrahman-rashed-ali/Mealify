@@ -14,7 +14,7 @@ import com.rashed.mealify.datasource.meals.local.entities.MealEntity;
 import com.rashed.mealify.datasource.meals.local.entities.PlannedMealEntity;
 import com.rashed.mealify.datasource.meals.remote.dto.MealsResponse;
 
-@Database(entities = {MealEntity.class, PlannedMealEntity.class, FavoriteEntity.class}, version = 2)
+@Database(entities = {MealEntity.class, PlannedMealEntity.class, FavoriteEntity.class}, version = 4)
 public abstract class DatabaseConnection extends RoomDatabase {
 
     private static final String DATABASE_NAME = "meals_db";
@@ -29,7 +29,7 @@ public abstract class DatabaseConnection extends RoomDatabase {
                             context.getApplicationContext(),
                             DatabaseConnection.class,
                             DATABASE_NAME
-                    )
+                    ).fallbackToDestructiveMigration()
                     .build();
         }
         return instance;

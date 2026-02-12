@@ -1,14 +1,12 @@
 package com.rashed.mealify.domain.usecases.meal;
 
-import com.rashed.mealify.common.Result;
-import com.rashed.mealify.datasource.meals.remote.dto.MealsResponse;
-import com.rashed.mealify.datasource.meals.remote.dto.Meals;
 import com.rashed.mealify.domain.mapper.MealMapper;
 import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.repository.MealRepository;
-
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import io.reactivex.rxjava3.core.Single;
 
 public class FilterByIngredientUseCase {
     private final MealRepository repository;
@@ -17,21 +15,13 @@ public class FilterByIngredientUseCase {
         this.repository = repository;
     }
 
-    public Result<List<Meal>> execute(String ingredientName) {
-        Result<MealsResponse> result = repository.filterByIngredient(ingredientName);
-
-        if (result instanceof Result.Success) {
-            MealsResponse data = ((Result.Success<MealsResponse>) result).data;
-            List<Meal> meals = new ArrayList<>();
-
-            if (data != null && data.getMeals() != null) {
-                for (Meals dto : data.getMeals()) {
-                    meals.add(MealMapper.mapDtoToDomain(dto));
-                }
-            }
-            return new Result.Success<>(meals);
-        } else {
-            return new Result.Error<>(((Result.Error) result).message, ((Result.Error) result).throwable);
-        }
+    public Single<List<Meal>> execute(String ingredientName) {
+        return repository.filterByIngredient(ingredientName)
+                .map(response -> {
+                    if (response.getMeals() == null) return Collections.<Meal>emptyList();
+                    return response.getMeals().stream()
+                            .map(MealMapper::mapDtoToDomain)
+                            .collect(Collectors.toList());
+                });
     }
 }

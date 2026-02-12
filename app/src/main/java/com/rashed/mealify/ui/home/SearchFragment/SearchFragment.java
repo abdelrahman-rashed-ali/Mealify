@@ -28,14 +28,9 @@ import com.rashed.mealify.domain.model.Category;
 import com.rashed.mealify.domain.model.Ingredient;
 import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.repository.MealRepository;
-import com.rashed.mealify.domain.usecases.meal.FilterByAreaUseCase;
-import com.rashed.mealify.domain.usecases.meal.FilterByCategoryUseCase;
-import com.rashed.mealify.domain.usecases.meal.FilterByIngredientUseCase;
 import com.rashed.mealify.domain.usecases.meal.GetAreasUseCase;
 import com.rashed.mealify.domain.usecases.meal.GetCategoriesUseCase;
 import com.rashed.mealify.domain.usecases.meal.GetIngredientsUseCase;
-import com.rashed.mealify.domain.usecases.meal.GetMealDetailsUseCase;
-import com.rashed.mealify.domain.usecases.meal.SearchMealsByNameUseCase;
 import com.rashed.mealify.domain.usecases.meal.SearchMealsUseCase;
 import com.rashed.mealify.ui.home.SearchFragment.adapters.SearchAdapter;
 

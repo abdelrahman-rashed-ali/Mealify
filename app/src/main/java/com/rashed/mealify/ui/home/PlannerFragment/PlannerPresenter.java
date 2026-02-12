@@ -1,23 +1,23 @@
 package com.rashed.mealify.ui.home.PlannerFragment;
 
-import android.os.Handler;
-import android.os.Looper;
-
 import com.google.firebase.auth.FirebaseAuth;
 import com.rashed.mealify.domain.usecases.meal.ManagePlanUseCase;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
+
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class PlannerPresenter implements PlannerContract.Presenter {
 
     private PlannerContract.View view;
     private final ManagePlanUseCase managePlanUseCase;
-    private String userId;
+    private final String userId;
     private String selectedDateFormatted;
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final CompositeDisposable disposables = new CompositeDisposable();
 
     public PlannerPresenter(ManagePlanUseCase managePlanUseCase) {
         this.managePlanUseCase = managePlanUseCase;
@@ -36,6 +36,7 @@ public class PlannerPresenter implements PlannerContract.Presenter {
     @Override
     public void detach() {
         this.view = null;
+        disposables.clear();
     }
 
     @Override
@@ -53,30 +54,28 @@ public class PlannerPresenter implements PlannerContract.Presenter {
 
     @Override
     public void loadPlan() {
-        if (selectedDateFormatted == null) return;
+        if (selectedDateFormatted == null || userId.equals("guest_user")) {
+            if (view != null) view.showEmptyState();
+            return;
+        }
 
-        managePlanUseCase.getPlanForDay(userId, selectedDateFormatted, new ManagePlanUseCase.PlanCallback<List<ManagePlanUseCase.PlannedMealDomain>>() {
-            @Override
-            public void onSuccess(List<ManagePlanUseCase.PlannedMealDomain> data) {
-                mainHandler.post(() -> {
-                    if (view == null) return;
-
-                    if (data.isEmpty()) {
-                        view.showEmptyState();
-                    } else {
-                        view.showContent();
-                        view.showPlanList(data);
-                    }
-                });
-            }
-
-            @Override
-            public void onError(String error) {
-                mainHandler.post(() -> {
-                    if (view != null) view.showError(error);
-                });
-            }
-        });
+        disposables.add(managePlanUseCase.getPlanForDay(userId, selectedDateFormatted)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        data -> {
+                            if (view == null) return;
+                            if (data.isEmpty()) {
+                                view.showEmptyState();
+                            } else {
+                                view.showContent();
+                                view.showPlanList(data);
+                            }
+                        },
+                        throwable -> {
+                            if (view != null) view.showError(throwable.getMessage());
+                        }
+                ));
     }
 
     @Override
@@ -85,19 +84,15 @@ public class PlannerPresenter implements PlannerContract.Presenter {
             view.showMealRemovedMessage(item, position);
         }
 
-        managePlanUseCase.removeMeal(userId, selectedDateFormatted, item.meal.getId(), new ManagePlanUseCase.PlanCallback<Void>() {
-            @Override
-            public void onSuccess(Void data) {
-                // Deletion Confirmed
-            }
-
-            @Override
-            public void onError(String error) {
-                mainHandler.post(() -> {
-                    if (view != null) view.showError("Failed to remove: " + error);
-                });
-            }
-        });
+        disposables.add(managePlanUseCase.removeMeal(userId, selectedDateFormatted, item.meal.getId())
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        () -> {},
+                        throwable -> {
+                            if (view != null) view.showError("Failed to remove: " + throwable.getMessage());
+                        }
+                ));
     }
 
     @Override
@@ -107,20 +102,16 @@ public class PlannerPresenter implements PlannerContract.Presenter {
             view.showContent();
         }
 
-        managePlanUseCase.addMeal(userId, selectedDateFormatted, item.type, item.meal, new ManagePlanUseCase.PlanCallback<Void>() {
-            @Override
-            public void onSuccess(Void data) {
-                mainHandler.post(() -> {
-                    if (view != null) view.showRestoreSuccessMessage();
-                });
-            }
-
-            @Override
-            public void onError(String error) {
-                mainHandler.post(() -> {
-                    if (view != null) view.showError("Failed to restore meal: " + error);
-                });
-            }
-        });
+        disposables.add(managePlanUseCase.addMeal(userId, selectedDateFormatted, item.type, item.meal)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        () -> {
+                            if (view != null) view.showRestoreSuccessMessage();
+                        },
+                        throwable -> {
+                            if (view != null) view.showError("Failed to restore: " + throwable.getMessage());
+                        }
+                ));
     }
 }

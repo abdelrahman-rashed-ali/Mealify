@@ -2,7 +2,7 @@ package com.rashed.mealify.datasource.repository;
 
 import android.content.Context;
 
-import com.rashed.mealify.common.Result;
+import com.rashed.mealify.common.NetworkUtils;
 import com.rashed.mealify.datasource.meals.local.MealsLocalDataSource;
 import com.rashed.mealify.datasource.meals.local.entities.MealEntity;
 import com.rashed.mealify.datasource.meals.local.entities.PlannedMealDetails;
@@ -16,192 +16,113 @@ import com.rashed.mealify.domain.repository.MealRepository;
 
 import java.util.List;
 
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
+
 public class MealRepositoryImpl implements MealRepository {
 
     private final MealsRemoteDataSource remote;
     private final MealsLocalDataSource local;
+    private final Context context;
 
     public MealRepositoryImpl(Context context) {
         this.remote = new MealsRemoteDataSource();
         this.local = new MealsLocalDataSource(context);
+        this.context = context;
     }
 
-    // ---------------- Remote (TheMealDB) ----------------
-
-    @Override
-    public Result<MealsResponse> searchMealsByName(String name) {
-        Result<MealsResponse> res = remote.searchMealsByName(name);
-        cacheMealsIfPossible(res);
-        return res;
-    }
-
-    @Override
-    public Result<MealsResponse> listMealsByFirstLetter(String letter) {
-        Result<MealsResponse> res = remote.listMealsByFirstLetter(letter);
-        cacheMealsIfPossible(res);
-        return res;
+    private <T> Single<T> withNetwork(Single<T> remoteCall) {
+        return Single.defer(() -> {
+            if (!NetworkUtils.isInternetAvailable(context)) {
+                return Single.error(new Exception("No internet connection available."));
+            }
+            return remoteCall;
+        });
     }
 
     @Override
-    public Result<MealsResponse> lookupMealById(String id) {
-        // 1) try cache first
-        MealEntity cached = local.getMealById(id);
-        if (cached != null) {
-            // لو عندك mapper من MealEntity -> MealsResponse اعمله هنا
-            // لكن بما إن DTOs مختلفة، هنرجّع remote دائمًا لو محتاج DTO.
-            // (اختياري) تقدر تعمل method في domain ترجع MealEntity مباشرة.
-        }
+    public Single<MealsResponse> searchMealsByName(String name) {
+        return withNetwork(remote.searchMealsByName(name));
+    }
 
-        // 2) fetch from remote
-        Result<MealsResponse> res = remote.lookupMealById(id);
-        cacheMealsIfPossible(res);
-        return res;
+
+    @Override
+    public Single<MealsResponse> lookupMealById(String id) {
+        return withNetwork(remote.lookupMealById(id));
     }
 
     @Override
-    public Result<MealsResponse> getRandomMeal() {
-        Result<MealsResponse> res = remote.getRandomMeal();
-        cacheMealsIfPossible(res);
-        return res;
+    public Single<MealsResponse> getRandomMeal() {
+        return withNetwork(remote.getRandomMeal());
     }
 
     @Override
-    public Result<CategoriesResponse> getCategories() {
-        return remote.getCategories();
+    public Single<CategoriesResponse> getCategories() {
+        return withNetwork(remote.getCategories());
     }
 
     @Override
-    public Result<ListCategories> listCategories() {
-        return remote.listCategories();
+    public Single<ListCategories> listCategories() {
+        return withNetwork(remote.listCategories());
     }
 
     @Override
-    public Result<ListAreas> listAreas() {
-        return remote.listAreas();
+    public Single<ListAreas> listAreas() {
+        return withNetwork(remote.listAreas());
     }
 
     @Override
-    public Result<ListIngredients> listIngredients() {
-        return remote.listIngredients();
+    public Single<ListIngredients> listIngredients() {
+        return withNetwork(remote.listIngredients());
     }
 
     @Override
-    public Result<MealsResponse> filterByIngredient(String ingredient) {
-        Result<MealsResponse> res = remote.filterByIngredient(ingredient);
-        cacheMealsIfPossible(res);
-        return res;
+    public Single<MealsResponse> filterByIngredient(String ingredient) {
+        return withNetwork(remote.filterByIngredient(ingredient));
     }
 
     @Override
-    public Result<MealsResponse> filterByCategory(String category) {
-        Result<MealsResponse> res = remote.filterByCategory(category);
-        cacheMealsIfPossible(res);
-        return res;
+    public Single<MealsResponse> filterByCategory(String category) {
+        return withNetwork(remote.filterByCategory(category));
     }
 
     @Override
-    public Result<MealsResponse> filterByArea(String area) {
-        Result<MealsResponse> res = remote.filterByArea(area);
-        cacheMealsIfPossible(res);
-        return res;
-    }
-
-    // ---------------- Local (Room) Favorites ----------------
-
-    @Override
-    public Result<Void> addFavorite(String uid, MealEntity meal) {
-        try {
-            local.addFavorite(uid, meal);
-            return new Result.Success<>(null);
-        } catch (Exception e) {
-            return new Result.Error<>("Failed to add favorite: " + e.getMessage(), e);
-        }
+    public Single<MealsResponse> filterByArea(String area) {
+        return withNetwork(remote.filterByArea(area));
     }
 
     @Override
-    public Result<Void> removeFavorite(String uid, String mealId) {
-        try {
-            local.removeFavorite(uid, mealId);
-            return new Result.Success<>(null);
-        } catch (Exception e) {
-            return new Result.Error<>("Failed to remove favorite: " + e.getMessage(), e);
-        }
+    public Completable addFavorite(String uid, MealEntity meal) {
+        return local.addFavorite(uid, meal);
     }
 
     @Override
-    public Result<Boolean> isFavorite(String uid, String mealId) {
-        try {
-            boolean exists = local.isFavorite(uid, mealId);
-            return new Result.Success<>(exists);
-        } catch (Exception e) {
-            return new Result.Error<>("Failed to check favorite: " + e.getMessage(), e);
-        }
+    public Completable removeFavorite(String uid, String mealId) {
+        return local.removeFavorite(uid, mealId);
     }
 
     @Override
-    public Result<List<MealEntity>> getFavorites(String uid) {
-        try {
-            List<MealEntity> list = local.getFavorites(uid);
-            return new Result.Success<>(list);
-        } catch (Exception e) {
-            return new Result.Error<>("Failed to load favorites: " + e.getMessage(), e);
-        }
-    }
-
-
-// ---------------- Local (Room) Plan ----------------
-
-    @Override
-    public Result<Void> addMealToPlan(String uid, String date, String mealType, MealEntity meal) {
-        try {
-            local.addMealToPlan(uid, date, mealType, meal);
-            return new Result.Success<>(null);
-        } catch (Exception e) {
-            return new Result.Error<>("Failed to add: " + e.getMessage(), e);
-        }
+    public Single<Boolean> isFavorite(String uid, String mealId) {
+        return local.isFavorite(uid, mealId);
     }
 
     @Override
-    public Result<Void> removeMealFromPlan(String uid, String date, String mealId) {
-        try {
-            local.removeMealFromPlan(uid, date, mealId);
-            return new Result.Success<>(null);
-        } catch (Exception e) {
-            return new Result.Error<>("Failed to remove: " + e.getMessage(), e);
-        }
+    public Single<List<MealEntity>> getFavorites(String uid) {
+        return local.getFavorites(uid);
     }
 
-    // Note: I am changing the interface signature here conceptually.
-    // In a strict refactor, you'd update the Interface definition too.
-    // Assuming MealRepository interface uses Generics or we cast it in UseCase.
     @Override
-    public Result<List<PlannedMealDetails>> getPlanForDayDetails(String uid, String date) {
-        try {
-            List<PlannedMealDetails> list = local.getPlanForDay(uid, date);
-            return new Result.Success<>(list);
-        } catch (Exception e) {
-            return new Result.Error<>("Failed to load plan: " + e.getMessage(), e);
-        }
+    public Completable addMealToPlan(String uid, String date, String mealType, MealEntity meal) {
+        return local.addMealToPlan(uid, date, mealType, meal);
     }
 
-    // ---------------- Helpers ----------------
+    @Override
+    public Completable removeMealFromPlan(String uid, String date, String mealId) {
+        return local.removeMealFromPlan(uid, date, mealId);
+    }
 
-    /**
-     * Cache meals from DTO response into Room IF you have a mapper.
-     * حالياً: لازم تعمل Mapping من DTO meal -> MealEntity.
-     */
-    private void cacheMealsIfPossible(Result<MealsResponse> res) {
-        if (!(res instanceof Result.Success)) return;
-
-        MealsResponse body = ((Result.Success<MealsResponse>) res).data;
-        if (body == null || body.getMeals() == null) return;
-
-        // ⚠️ هنا محتاج مابّينج من DTO -> Entity
-        // مثال:
-        // for (MealDto dto : body.meals) {
-        //     local.upsertMeal(MealEntityMapper.fromDto(dto));
-        // }
-
-        // لو إنت مش عامل DTO/Entity mapper، سيبها فاضية لحد ما تعملها.
+    @Override
+    public Single<List<PlannedMealDetails>> getPlanForDayDetails(String uid, String date) {
+        return local.getPlanForDay(uid, date);
     }
 }

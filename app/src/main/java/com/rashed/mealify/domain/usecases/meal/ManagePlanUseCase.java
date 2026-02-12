@@ -1,71 +1,36 @@
 package com.rashed.mealify.domain.usecases.meal;
 
-import android.os.Handler;
-import android.os.Looper;
-
-import com.rashed.mealify.common.Result;
-import com.rashed.mealify.datasource.meals.local.entities.PlannedMealDetails;
-import com.rashed.mealify.datasource.repository.MealRepositoryImpl;
 import com.rashed.mealify.domain.mapper.MealMapper;
 import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.repository.MealRepository;
-
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 
 public class ManagePlanUseCase {
     private final MealRepository repository;
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
-
-    public interface PlanCallback<T> {
-        void onSuccess(T data);
-        void onError(String error);
-    }
 
     public ManagePlanUseCase(MealRepository repository) {
         this.repository = repository;
     }
 
-    public void addMeal(String uid, String date, String type, Meal meal, PlanCallback<Void> callback) {
-        new Thread(() -> {
-            Result<Void> result = repository.addMealToPlan(uid, date, type, MealMapper.mapDomainToEntity(meal));
-            mainHandler.post(() -> {
-                if (result instanceof Result.Success) callback.onSuccess(null);
-                else callback.onError(((Result.Error<?>) result).message);
-            });
-        }).start();
+    public Completable addMeal(String uid, String date, String type, Meal meal) {
+        return repository.addMealToPlan(uid, date, type, MealMapper.mapDomainToEntity(meal));
     }
 
-    public void removeMeal(String uid, String date, String mealId, PlanCallback<Void> callback) {
-        new Thread(() -> {
-            Result<Void> result = repository.removeMealFromPlan(uid, date, mealId);
-            mainHandler.post(() -> {
-                if (result instanceof Result.Success) callback.onSuccess(null);
-                else callback.onError(((Result.Error<?>) result).message);
-            });
-        }).start();
+    public Completable removeMeal(String uid, String date, String mealId) {
+        return repository.removeMealFromPlan(uid, date, mealId);
     }
 
-    public void getPlanForDay(String uid, String date, PlanCallback<List<PlannedMealDomain>> callback) {
-        new Thread(() -> {
-            Result<List<PlannedMealDetails>> result = ((MealRepositoryImpl)repository).getPlanForDayDetails(uid, date);
-
-            mainHandler.post(() -> {
-                if (result instanceof Result.Success) {
-                    List<PlannedMealDetails> details = ((Result.Success<List<PlannedMealDetails>>) result).data;
-                    List<PlannedMealDomain> domainList = new ArrayList<>();
-                    if (details != null) {
-                        for (PlannedMealDetails d : details) {
-                            Meal m = MealMapper.mapEntityToDomain(d.meal);
-                            domainList.add(new PlannedMealDomain(m, d.mealType, d.date));
-                        }
-                    }
-                    callback.onSuccess(domainList);
-                } else {
-                    callback.onError(((Result.Error<?>) result).message);
-                }
-            });
-        }).start();
+    public Single<List<PlannedMealDomain>> getPlanForDay(String uid, String date) {
+        return repository.getPlanForDayDetails(uid, date)
+                .map(details -> details.stream()
+                        .map(d -> new PlannedMealDomain(
+                                MealMapper.mapEntityToDomain(d.meal),
+                                d.mealType,
+                                d.date))
+                        .collect(Collectors.toList()));
     }
 
     public static class PlannedMealDomain {

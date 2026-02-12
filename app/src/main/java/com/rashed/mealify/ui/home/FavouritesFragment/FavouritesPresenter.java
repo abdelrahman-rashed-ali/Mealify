@@ -1,17 +1,13 @@
 package com.rashed.mealify.ui.home.FavouritesFragment;
 
-import android.os.Handler;
-import android.os.Looper;
-
 import com.google.firebase.auth.FirebaseAuth;
-import com.rashed.mealify.common.Result;
 import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.usecases.meal.GetFavoritesUseCase;
 import com.rashed.mealify.domain.usecases.meal.ToggleFavoriteUseCase;
 
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class FavouritesPresenter implements FavouritesContract.Presenter {
 
@@ -19,8 +15,7 @@ public class FavouritesPresenter implements FavouritesContract.Presenter {
     private final GetFavoritesUseCase getFavoritesUseCase;
     private final ToggleFavoriteUseCase toggleFavoriteUseCase;
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final CompositeDisposable disposables = new CompositeDisposable();
     private String currentUserId;
 
     public FavouritesPresenter(GetFavoritesUseCase getFavoritesUseCase, ToggleFavoriteUseCase toggleFavoriteUseCase) {
@@ -30,7 +25,7 @@ public class FavouritesPresenter implements FavouritesContract.Presenter {
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         } else {
-            currentUserId = "current_user_id";
+            currentUserId = "";
         }
     }
 
@@ -43,38 +38,37 @@ public class FavouritesPresenter implements FavouritesContract.Presenter {
     @Override
     public void detach() {
         this.view = null;
+        disposables.clear();
     }
 
     @Override
     public void loadFavorites() {
-        if (view != null) view.showLoading();
+        if (view == null) return;
 
-        executor.execute(() -> {
-            if (currentUserId.isEmpty()) {
-                mainHandler.post(() -> {
-                    if (view != null) view.showErrorState("User not logged in");
-                });
-                return;
-            }
+        if (currentUserId.isEmpty()) {
+            view.showErrorState("User not logged in");
+            return;
+        }
 
-            Result<List<Meal>> result = getFavoritesUseCase.execute(currentUserId);
+        view.showLoading();
 
-            mainHandler.post(() -> {
-                if (view == null) return;
-                view.hideLoading();
-
-                if (result instanceof Result.Success) {
-                    List<Meal> data = ((Result.Success<List<Meal>>) result).data;
-                    if (data == null || data.isEmpty()) {
-                        view.showEmptyState();
-                    } else {
-                        view.showFavorites(data);
-                    }
-                } else {
-                    view.showErrorState(((Result.Error) result).message);
-                }
-            });
-        });
+        disposables.add(getFavoritesUseCase.execute(currentUserId)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        data -> {
+                            view.hideLoading();
+                            if (data == null || data.isEmpty()) {
+                                view.showEmptyState();
+                            } else {
+                                view.showFavorites(data);
+                            }
+                        },
+                        throwable -> {
+                            view.hideLoading();
+                            view.showErrorState(throwable.getMessage());
+                        }
+                ));
     }
 
     @Override
@@ -84,15 +78,30 @@ public class FavouritesPresenter implements FavouritesContract.Presenter {
 
     @Override
     public void deleteMeal(Meal meal, int position) {
-        toggleFavoriteUseCase.execute(currentUserId, meal, true);
-        if (view != null) {
-            view.showDeleteConfirmation(meal, position);
-        }
+        // ToggleFavoriteUseCase now returns a Completable
+        disposables.add(toggleFavoriteUseCase.execute(currentUserId, meal, true)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        () -> {
+                            if (view != null) view.showDeleteConfirmation(meal, position);
+                        },
+                        throwable -> {
+                            if (view != null) view.showErrorState("Failed to remove: " + throwable.getMessage());
+                        }
+                ));
     }
 
     @Override
     public void undoDelete(Meal meal) {
-        toggleFavoriteUseCase.execute(currentUserId, meal, false);
-        loadFavorites();
+        disposables.add(toggleFavoriteUseCase.execute(currentUserId, meal, false)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        this::loadFavorites, // Reload list on success
+                        throwable -> {
+                            if (view != null) view.showErrorState("Failed to undo: " + throwable.getMessage());
+                        }
+                ));
     }
 }

@@ -1,10 +1,9 @@
 package com.rashed.mealify.domain.usecases.meal;
 
-import com.rashed.mealify.common.Result;
-import com.rashed.mealify.datasource.meals.remote.dto.MealsResponse;
 import com.rashed.mealify.domain.mapper.MealMapper;
 import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.repository.MealRepository;
+import io.reactivex.rxjava3.core.Single;
 
 public class GetMealDetailsUseCase {
     private final MealRepository repository;
@@ -13,17 +12,13 @@ public class GetMealDetailsUseCase {
         this.repository = repository;
     }
 
-    public Result<Meal> execute(String mealId) {
-        Result<MealsResponse> result = repository.lookupMealById(mealId);
-
-        if (result instanceof Result.Success) {
-            MealsResponse data = ((Result.Success<MealsResponse>) result).data;
-            if (data != null && data.getMeals() != null && !data.getMeals().isEmpty()) {
-                return new Result.Success<>(MealMapper.mapDtoToDomain(data.getMeals().get(0)));
-            }
-            return new Result.Error<>("Meal not found", null);
-        } else {
-            return new Result.Error<>(((Result.Error) result).message, ((Result.Error) result).throwable);
-        }
+    public Single<Meal> execute(String mealId) {
+        return repository.lookupMealById(mealId)
+                .map(response -> {
+                    if (response.getMeals() == null || response.getMeals().isEmpty()) {
+                        throw new Exception("Meal not found");
+                    }
+                    return MealMapper.mapDtoToDomain(response.getMeals().get(0));
+                });
     }
 }

@@ -9,18 +9,12 @@ import com.rashed.mealify.datasource.meals.local.entities.MealEntity;
 
 import java.util.List;
 
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
+
 @Dao
 public interface MealDao {
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void upsert(MealEntity meal);
+    Completable upsert(MealEntity meal);
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void upsertAll(List<MealEntity> meals);
-
-    @Query("SELECT * FROM meals WHERE idMeal = :mealId LIMIT 1")
-    MealEntity getById(String mealId);
-
-    @Query("DELETE FROM meals")
-    void clearAll();
 }

@@ -3,6 +3,7 @@ package com.rashed.mealify.domain.usecases.meal;
 import com.rashed.mealify.domain.mapper.MealMapper;
 import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.repository.MealRepository;
+import io.reactivex.rxjava3.core.Completable;
 
 public class ToggleFavoriteUseCase {
     private final MealRepository repository;
@@ -11,13 +12,11 @@ public class ToggleFavoriteUseCase {
         this.repository = repository;
     }
 
-    public void execute(String userId, Meal meal, boolean currentlyFavorite) {
-        new Thread(() -> {
-            if (currentlyFavorite) {
-                repository.removeFavorite(userId, meal.getId());
-            } else {
-                repository.addFavorite(userId, MealMapper.mapDomainToEntity(meal));
-            }
-        }).start();
+    public Completable execute(String userId, Meal meal, boolean currentlyFavorite) {
+        if (currentlyFavorite) {
+            return repository.removeFavorite(userId, meal.getId());
+        } else {
+            return repository.addFavorite(userId, MealMapper.mapDomainToEntity(meal));
+        }
     }
 }
