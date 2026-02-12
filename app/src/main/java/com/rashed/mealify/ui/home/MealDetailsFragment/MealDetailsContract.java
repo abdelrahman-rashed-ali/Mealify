@@ -12,6 +12,7 @@ public interface MealDetailsContract {
         void showMessage(String message);
         void showPlanDatePicker();
         void showMealTypeDialog(long dateSelection);
+        void showGuestModeDialog();
     }
 
     interface Presenter {

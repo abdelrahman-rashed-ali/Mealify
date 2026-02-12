@@ -1,5 +1,6 @@
 package com.rashed.mealify.ui.home.MealDetailsFragment;
 
+import android.content.Intent; // Added Import
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,8 +10,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-// Removed Toast import
-// import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,17 +24,21 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.datepicker.MaterialDatePicker;
-import com.google.android.material.snackbar.Snackbar; // Added Snackbar import
+import com.google.android.material.dialog.MaterialAlertDialogBuilder; // Added Import
+import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseAuth; // Added Import
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
+
 import com.rashed.mealify.R;
 import com.rashed.mealify.datasource.repository.MealRepositoryImpl;
 import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.usecases.meal.CheckMealStatusUseCase;
 import com.rashed.mealify.domain.usecases.meal.ManagePlanUseCase;
 import com.rashed.mealify.domain.usecases.meal.ToggleFavoriteUseCase;
+import com.rashed.mealify.ui.authentication.AuthActivity;
 import com.rashed.mealify.ui.home.MealDetailsFragment.adapter.IngredientsAdapter;
 
 import java.util.ArrayList;
@@ -45,7 +48,6 @@ import java.util.Locale;
 public class MealDetailsFragment extends Fragment implements MealDetailsContract.View {
 
     private MealDetailsContract.Presenter presenter;
-
     private ImageView imgHeader;
     private Toolbar toolbar;
     private TextView tvTitleHeader, tvArea, tvCategory, tvStepCounter, tvInstructionText, tvVideoTitle;
@@ -56,11 +58,9 @@ public class MealDetailsFragment extends Fragment implements MealDetailsContract
     private YouTubePlayerView youtubePlayerView;
     private ProgressBar progressBar;
     private View contentView;
-
     private IngredientsAdapter ingredientsAdapter;
     private YouTubePlayer mYouTubePlayer;
     private String pendingVideoId;
-
     private int currentStepIndex = 0;
     private List<String> instructionSteps = new ArrayList<>();
 
@@ -87,25 +87,19 @@ public class MealDetailsFragment extends Fragment implements MealDetailsContract
     private void initViews(View view) {
         imgHeader = view.findViewById(R.id.img_meal_detail);
         toolbar = view.findViewById(R.id.toolbar);
-
         tvTitleHeader = view.findViewById(R.id.tv_meal_title_header);
         tvArea = view.findViewById(R.id.tv_area);
         tvCategory = view.findViewById(R.id.tv_category);
-
         rvIngredients = view.findViewById(R.id.rv_ingredients);
         tvStepCounter = view.findViewById(R.id.tv_step_counter);
         tvInstructionText = view.findViewById(R.id.tv_instruction_step);
-
         btnPrevStep = view.findViewById(R.id.btn_prev_step);
         btnNextStep = view.findViewById(R.id.btn_next_step);
-
         btnFavorite = view.findViewById(R.id.btn_action_favorite);
         btnPlan = view.findViewById(R.id.btn_action_plan);
-
         cardVideo = view.findViewById(R.id.card_video);
         tvVideoTitle = view.findViewById(R.id.tv_video_title);
         youtubePlayerView = view.findViewById(R.id.youtube_player_view);
-
         progressBar = view.findViewById(R.id.progress_bar);
         contentView = view.findViewById(R.id.nested_scroll_view);
 
@@ -118,7 +112,16 @@ public class MealDetailsFragment extends Fragment implements MealDetailsContract
         rvIngredients.setAdapter(ingredientsAdapter);
 
         btnFavorite.setOnClickListener(v -> presenter.toggleFavorite());
-        btnPlan.setOnClickListener(v -> showPlanDatePicker());
+        btnPlan.setOnClickListener(v -> presenter.addToPlan(MaterialDatePicker.todayInUtcMilliseconds(), "Check")); // Modified to check permissions first
+
+
+        btnPlan.setOnClickListener(v -> {
+            if (FirebaseAuth.getInstance().getCurrentUser() != null && FirebaseAuth.getInstance().getCurrentUser().isAnonymous()) {
+                showGuestModeDialog();
+            } else {
+                showPlanDatePicker();
+            }
+        });
 
         btnNextStep.setOnClickListener(v -> changeStep(1));
         btnPrevStep.setOnClickListener(v -> changeStep(-1));
@@ -137,14 +140,35 @@ public class MealDetailsFragment extends Fragment implements MealDetailsContract
         presenter.attach(this);
     }
 
+
+
+    @Override
+    public void showGuestModeDialog() {
+        if (getContext() == null) return;
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Sign in Required")
+                .setMessage("To save your favorite meals and create weekly plans, you need to sign in with an account.")
+                .setIcon(R.drawable.ic_favorite_filled) // Optional: Add an icon if you have one
+                .setPositiveButton("Sign In", (dialog, which) -> {
+                    FirebaseAuth.getInstance().signOut();
+
+                    Intent intent = new Intent(requireContext(), AuthActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    requireActivity().finish();
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+
     @Override
     public void displayMealDetails(Meal meal) {
         tvTitleHeader.setText(meal.getName());
-
         Glide.with(this).load(meal.getThumbUrl()).centerCrop().into(imgHeader);
         tvArea.setText(meal.getArea() != null ? meal.getArea() : "Unknown");
         tvCategory.setText(meal.getCategory() != null ? meal.getCategory() : "Unknown");
-
         ingredientsAdapter.setList(meal.getIngredients());
         parseInstructions(meal.getInstructions());
         loadVideo(meal.getYoutubeUrl());
@@ -204,6 +228,7 @@ public class MealDetailsFragment extends Fragment implements MealDetailsContract
         if (progressBar != null) progressBar.setVisibility(View.GONE);
         if (contentView != null) contentView.setAlpha(1.0f);
     }
+
 
     private void parseInstructions(String rawInstructions) {
         instructionSteps.clear();
@@ -322,15 +347,24 @@ public class MealDetailsFragment extends Fragment implements MealDetailsContract
         View fabGlow = getActivity().findViewById(R.id.fab_glow);
 
         int duration = 300;
-
-        float translationY = show ? 0f : 300f;
+        float translationY = show ? 0f : (bottomNav != null ? bottomNav.getHeight() : 300f);
         float alpha = show ? 1f : 0f;
+
+        if (show) {
+            if (bottomNav != null) bottomNav.setVisibility(View.VISIBLE);
+            if (fabHome != null) fabHome.setVisibility(View.VISIBLE);
+            if (fabGlow != null) fabGlow.setVisibility(View.VISIBLE);
+        }
 
         if (bottomNav != null) {
             bottomNav.animate()
                     .translationY(translationY)
                     .alpha(alpha)
                     .setDuration(duration)
+                    .withEndAction(() -> {
+                        // If HIDING: Set GONE after animation ends to reclaim space
+                        if (!show) bottomNav.setVisibility(View.GONE);
+                    })
                     .start();
         }
 
@@ -339,6 +373,9 @@ public class MealDetailsFragment extends Fragment implements MealDetailsContract
                     .translationY(translationY)
                     .alpha(alpha)
                     .setDuration(duration)
+                    .withEndAction(() -> {
+                        if (!show) fabHome.setVisibility(View.GONE);
+                    })
                     .start();
         }
 
@@ -347,6 +384,9 @@ public class MealDetailsFragment extends Fragment implements MealDetailsContract
                     .translationY(translationY)
                     .alpha(alpha)
                     .setDuration(duration)
+                    .withEndAction(() -> {
+                        if (!show) fabGlow.setVisibility(View.GONE);
+                    })
                     .start();
         }
     }
