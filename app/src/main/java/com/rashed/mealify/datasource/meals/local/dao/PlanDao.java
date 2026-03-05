@@ -5,7 +5,7 @@ import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
-import com.rashed.mealify.datasource.meals.local.entities.PlannedMealDetails;
+import com.rashed.mealify.datasource.meals.local.dto.PlannedMealDetails;
 import com.rashed.mealify.datasource.meals.local.entities.PlannedMealEntity;
 
 import java.util.List;

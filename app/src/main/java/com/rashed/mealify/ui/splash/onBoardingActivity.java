@@ -63,8 +63,8 @@ public class onBoardingActivity extends AppCompatActivity {
                 "Plan Your Week",
                 "Easily schedule breakfast, lunch, and dinner.",
                 colorTransparent,
-                R.drawable.ic_calendar,
-                R.drawable.ic_calendar
+                R.drawable.ic_calender_white,
+                R.drawable.ic_calender_white
         );
 
         PaperOnboardingPage scr3 = new PaperOnboardingPage(

@@ -56,6 +56,7 @@ public class CategoriesAdapter extends RecyclerView.Adapter<CategoriesAdapter.Vi
         Glide.with(holder.itemView.getContext())
                 .load(item.getThumbUrl())
                 .centerCrop()
+                .placeholder(R.drawable.ic_launcher_icon)
                 .into(holder.img);
 
         if (position == selectedPosition) {

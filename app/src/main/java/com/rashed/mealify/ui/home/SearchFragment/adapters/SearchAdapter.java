@@ -66,7 +66,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
             Glide.with(itemView.getContext())
                     .load(meal.getThumbUrl())
                     .centerCrop()
-                    .placeholder(R.drawable.ic_launcher_background)
+                    .placeholder(R.drawable.ic_launcher_icon)
                     .into(imgThumb);
 
             card.setOnClickListener(v -> listener.onClick(meal));

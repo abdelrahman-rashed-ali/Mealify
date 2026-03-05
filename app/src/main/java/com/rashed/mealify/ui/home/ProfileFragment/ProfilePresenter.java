@@ -6,6 +6,8 @@ import com.rashed.mealify.datasource.repository.SyncRepository;
 import com.rashed.mealify.domain.usecases.auth.GetCurrentUserUseCase;
 import com.rashed.mealify.domain.usecases.auth.LogoutUseCase;
 
+import java.util.concurrent.TimeUnit;
+
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -99,6 +101,7 @@ public class ProfilePresenter implements ProfileContract.Presenter {
 
         disposables.add(syncRepository.syncData()
                 .subscribeOn(Schedulers.io())
+                .timeout(5, TimeUnit.SECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         () -> {
@@ -113,6 +116,7 @@ public class ProfilePresenter implements ProfileContract.Presenter {
                                 view.showMessage("Sync failed: " + throwable.getMessage());
                             }
                         }
+
                 ));
     }
 }

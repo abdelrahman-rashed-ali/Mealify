@@ -18,7 +18,6 @@ import java.util.List;
 
 public class RecommendedAdapter extends RecyclerView.Adapter<RecommendedAdapter.ViewHolder> {
 
-    // 1. Define the Listener Interface
     public interface OnMealClickListener {
         void onMealClick(Meal meal);
     }
@@ -26,7 +25,6 @@ public class RecommendedAdapter extends RecyclerView.Adapter<RecommendedAdapter.
     private List<Meal> meals = new ArrayList<>();
     private OnMealClickListener listener;
 
-    // 2. Public Setter for the Listener
     public void setListener(OnMealClickListener listener) {
         this.listener = listener;
     }
@@ -39,7 +37,6 @@ public class RecommendedAdapter extends RecyclerView.Adapter<RecommendedAdapter.
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Ensure you have a layout file named 'item_meal_card.xml' or similar
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_recommended_meal, parent, false);
         return new ViewHolder(view);
     }
@@ -53,10 +50,9 @@ public class RecommendedAdapter extends RecyclerView.Adapter<RecommendedAdapter.
         Glide.with(holder.itemView.getContext())
                 .load(meal.getThumbUrl())
                 .centerCrop()
-                .placeholder(R.drawable.ic_launcher_background) // Add a placeholder drawable
+                .placeholder(R.drawable.ic_launcher_icon) // Add a placeholder drawable
                 .into(holder.imgThumb);
 
-        // 3. Trigger the Listener on Click
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onMealClick(meal);
