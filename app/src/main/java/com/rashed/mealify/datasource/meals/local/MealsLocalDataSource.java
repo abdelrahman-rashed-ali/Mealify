@@ -7,7 +7,7 @@ import com.rashed.mealify.datasource.meals.local.dao.MealDao;
 import com.rashed.mealify.datasource.meals.local.dao.PlanDao;
 import com.rashed.mealify.datasource.meals.local.entities.FavoriteEntity;
 import com.rashed.mealify.datasource.meals.local.entities.MealEntity;
-import com.rashed.mealify.datasource.meals.local.entities.PlannedMealDetails;
+import com.rashed.mealify.datasource.meals.local.dto.PlannedMealDetails;
 import com.rashed.mealify.datasource.meals.local.entities.PlannedMealEntity;
 import java.util.List;
 

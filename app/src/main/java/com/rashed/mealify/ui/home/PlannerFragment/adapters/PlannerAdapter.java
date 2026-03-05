@@ -102,6 +102,7 @@ public class PlannerAdapter extends RecyclerView.Adapter<PlannerAdapter.PlannerV
             Glide.with(itemView.getContext())
                     .load(item.meal.getThumbUrl())
                     .centerCrop()
+                    .placeholder(R.drawable.ic_launcher_icon)
                     .into(imgThumb);
 
             itemView.setOnClickListener(v -> listener.onItemClick(item));

@@ -1,6 +1,7 @@
 package com.rashed.mealify.ui.home.PlannerFragment;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.usecases.meal.ManagePlanUseCase;
 
 import java.text.SimpleDateFormat;
@@ -113,5 +114,10 @@ public class PlannerPresenter implements PlannerContract.Presenter {
                             if (view != null) view.showError("Failed to restore: " + throwable.getMessage());
                         }
                 ));
+    }
+
+    @Override
+    public void onMealClicked(Meal meal) {
+        if (view != null) view.navigateToDetails(meal);
     }
 }

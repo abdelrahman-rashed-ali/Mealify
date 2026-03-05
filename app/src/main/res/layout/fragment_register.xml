@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#121212">
@@ -93,9 +94,12 @@
                     app:boxCornerRadiusBottomStart="30dp"
                     app:boxCornerRadiusTopEnd="30dp"
                     app:boxCornerRadiusTopStart="30dp"
-                    app:boxStrokeWidth="0dp"
-                    app:boxStrokeWidthFocused="0dp"
-                    app:hintTextColor="@color/chef_green">
+                    app:boxStrokeColor="@color/chef_green"
+                    app:boxStrokeWidth="1dp"
+                    app:boxStrokeWidthFocused="2dp"
+                    app:hintTextColor="@color/chef_green"
+                    app:startIconDrawable="@drawable/ic_person"
+                    app:startIconTint="#B3FFFFFF">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_first_name"
@@ -103,6 +107,10 @@
                         android:layout_height="wrap_content"
                         android:background="@null"
                         android:hint="First"
+                        android:inputType="textPersonName|textCapWords"
+                        android:imeOptions="actionNext"
+                        android:nextFocusForward="@+id/et_last_name"
+                        android:autofillHints="givenName"
                         android:textColorHint="@color/text_hint_green"
                         android:textColor="@color/text_white"
                         android:maxLines="1"/>
@@ -120,8 +128,9 @@
                     app:boxCornerRadiusBottomStart="30dp"
                     app:boxCornerRadiusTopEnd="30dp"
                     app:boxCornerRadiusTopStart="30dp"
-                    app:boxStrokeWidth="0dp"
-                    app:boxStrokeWidthFocused="0dp"
+                    app:boxStrokeColor="@color/chef_green"
+                    app:boxStrokeWidth="1dp"
+                    app:boxStrokeWidthFocused="2dp"
                     app:hintTextColor="@color/chef_green">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -130,6 +139,10 @@
                         android:layout_height="wrap_content"
                         android:background="@null"
                         android:hint="Last"
+                        android:inputType="textPersonName|textCapWords"
+                        android:imeOptions="actionNext"
+                        android:nextFocusForward="@+id/et_email"
+                        android:autofillHints="familyName"
                         android:textColorHint="@color/text_hint_green"
                         android:textColor="@color/text_white"
                         android:maxLines="1"/>
@@ -147,9 +160,14 @@
                 app:boxCornerRadiusBottomStart="30dp"
                 app:boxCornerRadiusTopEnd="30dp"
                 app:boxCornerRadiusTopStart="30dp"
-                app:boxStrokeWidth="0dp"
-                app:boxStrokeWidthFocused="0dp"
+                app:boxStrokeColor="@color/chef_green"
+                app:boxStrokeWidth="1dp"
+                app:boxStrokeWidthFocused="2dp"
                 app:hintTextColor="@color/chef_green"
+                app:startIconDrawable="@drawable/ic_email"
+                app:startIconTint="#B3FFFFFF"
+                app:endIconMode="clear_text"
+                app:endIconTint="#B3FFFFFF"
                 app:errorEnabled="true"
                 app:errorTextColor="@color/error_red"
                 app:errorIconTint="@color/error_red">
@@ -160,8 +178,11 @@
                     android:layout_height="wrap_content"
                     android:background="@null"
                     android:hint="Email"
-                    android:textColorHint="@color/text_hint_green"
                     android:inputType="textEmailAddress"
+                    android:imeOptions="actionNext"
+                    android:nextFocusForward="@+id/et_password"
+                    android:autofillHints="emailAddress"
+                    android:textColorHint="@color/text_hint_green"
                     android:textColor="@color/text_white"
                     android:maxLines="1"/>
             </com.google.android.material.textfield.TextInputLayout>
@@ -176,9 +197,12 @@
                 app:boxCornerRadiusBottomStart="30dp"
                 app:boxCornerRadiusTopEnd="30dp"
                 app:boxCornerRadiusTopStart="30dp"
-                app:boxStrokeWidth="0dp"
-                app:boxStrokeWidthFocused="0dp"
+                app:boxStrokeColor="@color/chef_green"
+                app:boxStrokeWidth="1dp"
+                app:boxStrokeWidthFocused="2dp"
                 app:hintTextColor="@color/chef_green"
+                app:startIconDrawable="@drawable/ic_lock"
+                app:startIconTint="#B3FFFFFF"
                 app:errorEnabled="true"
                 app:errorTextColor="@color/error_red"
                 app:errorIconTint="@color/error_red"
@@ -191,8 +215,11 @@
                     android:layout_height="wrap_content"
                     android:background="@null"
                     android:hint="Password"
-                    android:textColorHint="@color/text_hint_green"
                     android:inputType="textPassword"
+                    android:imeOptions="actionNext"
+                    android:nextFocusForward="@+id/et_confirm_password"
+                    android:autofillHints="newPassword"
+                    android:textColorHint="@color/text_hint_green"
                     android:textColor="@color/text_white"
                     android:maxLines="1"/>
             </com.google.android.material.textfield.TextInputLayout>
@@ -208,9 +235,12 @@
                 app:boxCornerRadiusBottomStart="30dp"
                 app:boxCornerRadiusTopEnd="30dp"
                 app:boxCornerRadiusTopStart="30dp"
-                app:boxStrokeWidth="0dp"
-                app:boxStrokeWidthFocused="0dp"
+                app:boxStrokeColor="@color/chef_green"
+                app:boxStrokeWidth="1dp"
+                app:boxStrokeWidthFocused="2dp"
                 app:hintTextColor="@color/chef_green"
+                app:startIconDrawable="@drawable/ic_lock"
+                app:startIconTint="#B3FFFFFF"
                 app:errorEnabled="true"
                 app:errorTextColor="@color/error_red"
                 app:errorIconTint="@color/error_red"
@@ -223,8 +253,10 @@
                     android:layout_height="wrap_content"
                     android:background="@null"
                     android:hint="Confirm Password"
-                    android:textColorHint="@color/text_hint_green"
                     android:inputType="textPassword"
+                    android:imeOptions="actionDone"
+                    android:autofillHints="newPassword"
+                    android:textColorHint="@color/text_hint_green"
                     android:textColor="@color/text_white"
                     android:maxLines="1"/>
             </com.google.android.material.textfield.TextInputLayout>

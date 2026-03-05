@@ -53,6 +53,7 @@ public class HomeFragment extends Fragment implements HomeContract.View {
 
     private CategoriesAdapter categoriesAdapter;
     private RecommendedAdapter mealsGridAdapter;
+    private View searchBar;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -77,7 +78,7 @@ public class HomeFragment extends Fragment implements HomeContract.View {
         tvCategoryTitle = view.findViewById(R.id.tv_category_title_dynamic);
         tvUserName = view.findViewById(R.id.tv_user_name);
         btnViewRecipe = view.findViewById(R.id.btn_view_recipe);
-
+        searchBar = view.findViewById(R.id.search_bar);
         rvCategories = view.findViewById(R.id.rv_categories);
         rvCategories.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         categoriesAdapter = new CategoriesAdapter();
@@ -92,6 +93,7 @@ public class HomeFragment extends Fragment implements HomeContract.View {
         categoriesAdapter.setListener(category -> presenter.selectCategory(category));
         mealsGridAdapter.setListener(meal -> presenter.onMealClicked(meal.getId()));
         btnViewRecipe.setOnClickListener(v -> presenter.onHeroClicked());
+        searchBar.setOnClickListener(v -> navigateToSearch());
     }
 
     private void initPresenter() {
@@ -167,6 +169,10 @@ public class HomeFragment extends Fragment implements HomeContract.View {
         HomeFragmentDirections.ActionNavHomeToMealDetailsFragment action =
                 HomeFragmentDirections.actionNavHomeToMealDetailsFragment(meal);
         Navigation.findNavController(requireView()).navigate(action);
+    }
+
+    public void navigateToSearch() {
+        Navigation.findNavController(requireView()).navigate(HomeFragmentDirections.actionNavHomeToNavSearch());
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.rashed.mealify.domain.repository;
 
 import com.rashed.mealify.datasource.meals.local.entities.MealEntity;
-import com.rashed.mealify.datasource.meals.local.entities.PlannedMealDetails;
+import com.rashed.mealify.datasource.meals.local.dto.PlannedMealDetails;
 import com.rashed.mealify.datasource.meals.remote.dto.CategoriesResponse;
 import com.rashed.mealify.datasource.meals.remote.dto.ListAreas;
 import com.rashed.mealify.datasource.meals.remote.dto.ListCategories;

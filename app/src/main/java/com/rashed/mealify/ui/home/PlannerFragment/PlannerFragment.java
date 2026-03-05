@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,8 +22,10 @@ import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.snackbar.Snackbar;
 import com.rashed.mealify.R;
 import com.rashed.mealify.datasource.repository.MealRepositoryImpl;
+import com.rashed.mealify.domain.model.Meal;
 import com.rashed.mealify.domain.repository.MealRepository;
 import com.rashed.mealify.domain.usecases.meal.ManagePlanUseCase;
+import com.rashed.mealify.ui.home.FavouritesFragment.FavouritesFragmentDirections;
 import com.rashed.mealify.ui.home.PlannerFragment.adapters.PlannerAdapter;
 
 import java.util.Date;
@@ -59,8 +62,7 @@ public class PlannerFragment extends Fragment implements PlannerContract.View {
         layoutEmptyState = view.findViewById(R.id.layout_empty_state);
         cardDatePicker = view.findViewById(R.id.card_date_picker);
 
-        adapter = new PlannerAdapter(requireContext(), item -> {
-        });
+        adapter = new PlannerAdapter(requireContext(), item ->  presenter.onMealClicked(item.meal) );
         rvPlanner.setLayoutManager(new LinearLayoutManager(getContext()));
         rvPlanner.setAdapter(adapter);
 
@@ -124,6 +126,11 @@ public class PlannerFragment extends Fragment implements PlannerContract.View {
     public void restoreItemToAdapter(int position, ManagePlanUseCase.PlannedMealDomain item) {
         adapter.addItem(position, item);
         showContent();
+    }
+
+    @Override
+    public void navigateToDetails(Meal meal) {
+        Navigation.findNavController(requireView()).navigate(PlannerFragmentDirections.actionNavPlannerToMealDetailsFragment(meal));
     }
 
     @Override

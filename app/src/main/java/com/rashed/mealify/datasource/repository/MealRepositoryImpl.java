@@ -5,7 +5,7 @@ import android.content.Context;
 import com.rashed.mealify.common.NetworkUtils;
 import com.rashed.mealify.datasource.meals.local.MealsLocalDataSource;
 import com.rashed.mealify.datasource.meals.local.entities.MealEntity;
-import com.rashed.mealify.datasource.meals.local.entities.PlannedMealDetails;
+import com.rashed.mealify.datasource.meals.local.dto.PlannedMealDetails;
 import com.rashed.mealify.datasource.meals.remote.MealsRemoteDataSource;
 import com.rashed.mealify.datasource.meals.remote.dto.CategoriesResponse;
 import com.rashed.mealify.datasource.meals.remote.dto.ListAreas;

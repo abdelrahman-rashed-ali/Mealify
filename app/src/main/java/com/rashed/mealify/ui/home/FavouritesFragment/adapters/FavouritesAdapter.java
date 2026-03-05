@@ -62,7 +62,7 @@ public class FavouritesAdapter extends RecyclerView.Adapter<FavouritesAdapter.Vi
 
         Glide.with(holder.itemView.getContext())
                 .load(meal.getThumbUrl())
-                .placeholder(android.R.drawable.ic_menu_gallery)
+                .placeholder(R.drawable.ic_launcher_icon)
                 .into(holder.imgThumbnail);
 
         holder.itemView.setOnClickListener(v -> listener.onMealClick(meal));
